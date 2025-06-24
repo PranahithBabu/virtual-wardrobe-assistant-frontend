@@ -20,6 +20,7 @@ export default function SuggestionsPage() {
 
   const handleGetSuggestions = () => {
     startTransition(async () => {
+      setSuggestions(null);
       if (closetItems.length < 3) {
         toast({
             variant: "destructive",
@@ -31,7 +32,7 @@ export default function SuggestionsPage() {
 
       try {
         const wardrobeDescription = closetItems
-          .map((item) => `${item.name} (${item.category}, ${item.color}, for ${item.season})`)
+          .map((item) => `${item.name} (${item.category}, ${item.color}, for ${item.season.join('/')})`)
           .join(', ');
 
         const result = await getOutfitSuggestionsAction({ wardrobeDescription });
@@ -78,7 +79,7 @@ export default function SuggestionsPage() {
                     <CardTitle className="font-headline">AI Stylist's Note</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground italic">"{suggestions.reasoning}"</p>
+                    <p className="text-muted-foreground italic">"{suggestions.overallReasoning}"</p>
                 </CardContent>
             </Card>
 

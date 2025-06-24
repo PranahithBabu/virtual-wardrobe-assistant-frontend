@@ -13,15 +13,23 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
+import {
   Home,
   Sparkles,
   Search,
   Calendar,
+  LogOut,
   User,
-  Settings,
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Button } from '../ui/button';
 
 const AppSidebar = () => {
   const pathname = usePathname();
@@ -31,7 +39,6 @@ const AppSidebar = () => {
     { href: '/browse', label: 'Browse Items', icon: Search },
     { href: '/suggestions', label: 'Outfit Suggestions', icon: Sparkles },
     { href: '/calendar', label: 'Calendar Planner', icon: Calendar },
-    { href: '/profile', label: 'Profile', icon: User },
   ];
 
   return (
@@ -57,19 +64,30 @@ const AppSidebar = () => {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-            <SidebarMenuItem>
-                 <Link href="/profile" legacyBehavior passHref>
-                    <SidebarMenuButton>
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
-                            <AvatarFallback>U</AvatarFallback>
-                        </Avatar>
-                        <span>User</span>
-                    </SidebarMenuButton>
-                 </Link>
-            </SidebarMenuItem>
-        </SidebarMenu>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:aspect-square">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
+                        <AvatarFallback>U</AvatarFallback>
+                    </Avatar>
+                    <span className="group-data-[collapsible=icon]:hidden">User</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>View Profile</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
   );

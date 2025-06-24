@@ -6,9 +6,10 @@ export interface ClosetItem {
   name: string;
   category: ItemCategory;
   color: string;
-  season: ItemSeason;
+  season: ItemSeason[];
   imageUrl: string;
   lastWorn?: string;
+  dataAiHint?: string;
 }
 
 export interface Outfit {

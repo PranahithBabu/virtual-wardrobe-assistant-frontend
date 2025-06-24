@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,6 +11,7 @@ import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 import AppHeader from '@/components/app/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -37,38 +39,86 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   category: z.enum(categories),
   color: z.string().min(2, { message: 'Please enter a color.' }),
-  season: z.enum(seasons),
-  image: z.any().refine((files) => files?.length === 1, 'Image is required.'),
+  seasons: z.array(z.string()).refine((value) => value.length > 0, {
+    message: 'You have to select at least one season.',
+  }),
+  image: z.any().refine((files) => files?.length > 0, 'Image is required.'),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export default function ScanPage() {
   const router = useRouter();
-  const { addItem } = useWardrobe();
+  const searchParams = useSearchParams();
+  const { addItem, getItemById, updateItem } = useWardrobe();
   const { toast } = useToast();
   const [preview, setPreview] = useState<string | null>(null);
+  
+  const itemId = searchParams.get('edit');
+  const isEditMode = !!itemId;
+  const itemToEdit = isEditMode ? getItemById(Number(itemId)) : null;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       color: '',
+      seasons: [],
+      image: undefined,
     },
   });
 
+  useEffect(() => {
+    if (isEditMode && itemToEdit) {
+      form.reset({
+        name: itemToEdit.name,
+        category: itemToEdit.category,
+        color: itemToEdit.color,
+        seasons: itemToEdit.season,
+        image: itemToEdit.imageUrl, // We use this to satisfy validation, won't be submitted
+      });
+      setPreview(itemToEdit.imageUrl);
+    }
+  }, [isEditMode, itemToEdit, form]);
+  
+  // Watch for changes in 'All' season checkbox
+  const watchedSeasons = form.watch('seasons');
+  useEffect(() => {
+      const allIndex = watchedSeasons.indexOf('All');
+      if (allIndex !== -1 && watchedSeasons.length > 1) {
+          form.setValue('seasons', ['All']);
+      }
+  }, [watchedSeasons, form]);
+
+
   const onSubmit = (data: FormData) => {
-    addItem({
-      name: data.name,
-      category: data.category,
-      color: data.color,
-      season: data.season,
-      imageUrl: URL.createObjectURL(data.image[0]),
-    });
-    toast({
-      title: "Item Added!",
-      description: `${data.name} has been added to your closet.`,
-    })
+    if (isEditMode && itemToEdit) {
+        const { image, ...updateData } = data;
+        const newImageData = image instanceof FileList ? URL.createObjectURL(image[0]) : undefined;
+
+        updateItem(itemToEdit.id, {
+            ...updateData,
+            season: data.seasons as ItemSeason[],
+            ...(newImageData && { imageUrl: newImageData })
+        });
+
+        toast({
+            title: "Item Updated!",
+            description: `${data.name} has been updated.`,
+        });
+    } else {
+        addItem({
+            name: data.name,
+            category: data.category,
+            color: data.color,
+            season: data.seasons as ItemSeason[],
+            imageUrl: URL.createObjectURL(data.image[0]),
+        });
+        toast({
+            title: "Item Added!",
+            description: `${data.name} has been added to your closet.`,
+        });
+    }
     router.push('/closet');
   };
 
@@ -82,12 +132,12 @@ export default function ScanPage() {
 
   const clearPreview = () => {
     setPreview(null);
-    form.resetField('image');
+    form.setValue('image', undefined, { shouldValidate: true });
   }
 
   return (
     <div className="flex flex-col h-full">
-      <AppHeader title="Add New Item" />
+      <AppHeader title={isEditMode ? "Edit Item" : "Add New Item"} />
       <div className="flex-grow p-4 md:p-6 lg:p-8">
         <Card className="max-w-2xl mx-auto rounded-2xl shadow-soft border-0">
           <CardHeader>
@@ -99,7 +149,7 @@ export default function ScanPage() {
                 <FormField
                   control={form.control}
                   name="image"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
                       <FormLabel>Image</FormLabel>
                       <FormControl>
@@ -156,15 +206,13 @@ export default function ScanPage() {
                     )}
                   />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField
+                 <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a category" />
@@ -180,33 +228,60 @@ export default function ScanPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
+                 <FormField
                     control={form.control}
-                    name="season"
-                    render={({ field }) => (
-                      <FormItem>
+                    name="seasons"
+                    render={() => (
+                        <FormItem>
                         <FormLabel>Season</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a season" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {seasons.map((s) => (
-                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <div className="flex flex-wrap gap-4">
+                            {seasons.map((item) => (
+                            <FormField
+                                key={item}
+                                control={form.control}
+                                name="seasons"
+                                render={({ field }) => {
+                                return (
+                                    <FormItem
+                                    key={item}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value?.includes(item)}
+                                        onCheckedChange={(checked) => {
+                                            if (item === 'All' && checked) {
+                                                field.onChange(['All']);
+                                            } else {
+                                                const newSeasons = field.value?.filter(s => s !== 'All');
+                                                return checked
+                                                    ? field.onChange([...(newSeasons || []), item])
+                                                    : field.onChange(
+                                                        newSeasons?.filter(
+                                                            (value) => value !== item
+                                                        )
+                                                    )
+                                            }
+                                        }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                        {item}
+                                    </FormLabel>
+                                    </FormItem>
+                                )
+                                }}
+                            />
                             ))}
-                          </SelectContent>
-                        </Select>
+                        </div>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                </div>
+                />
                 <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? 'Saving...' : 'Save Item'}
+                        {form.formState.isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? 'Save Changes' : 'Add Item')}
                     </Button>
                 </div>
               </form>

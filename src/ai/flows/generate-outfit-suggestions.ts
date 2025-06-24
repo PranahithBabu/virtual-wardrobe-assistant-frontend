@@ -33,16 +33,22 @@ export type GenerateOutfitSuggestionsInput = z.infer<
   typeof GenerateOutfitSuggestionsInputSchema
 >;
 
+const OutfitSuggestionSchema = z.object({
+    outfit: z.string().describe('A single outfit suggestion, described in a concise and stylish manner by listing the items.'),
+    occasion: z.string().describe('The kind of occasion this outfit would be suitable for (e.g., Casual Hangout, Office Wear, Date Night).'),
+    reasoning: z.string().describe('A brief, stylish reason why this specific outfit works well together.'),
+});
+
 const GenerateOutfitSuggestionsOutputSchema = z.object({
   outfitSuggestions: z
-    .array(z.string())
+    .array(OutfitSuggestionSchema)
     .describe(
-      'An array of outfit suggestions, each described in a concise and stylish manner.'
+      'An array of 3-4 diverse outfit suggestions, each with a description, suitable occasion, and reasoning.'
     ),
-  reasoning: z
+    overallReasoning: z
     .string()
     .describe(
-      'Explanation of why the outfit was suggested based on occasion, style, and wardrobe content.'
+      'A general, encouraging explanation of the styling approach for the generated outfits, acting as a stylist\'s note.'
     ),
 });
 export type GenerateOutfitSuggestionsOutput = z.infer<
@@ -59,17 +65,20 @@ const outfitSuggestionsPrompt = ai.definePrompt({
   name: 'outfitSuggestionsPrompt',
   input: {schema: GenerateOutfitSuggestionsInputSchema},
   output: {schema: GenerateOutfitSuggestionsOutputSchema},
-  prompt: `You are a personal stylist AI assistant helping the user create outfits from their existing wardrobe.
+  prompt: `You are a personal stylist AI assistant helping the user create outfits from their existing wardrobe. Your tone is encouraging, stylish, and helpful.
 
-  Given the following description of the user's wardrobe, their preferences, and the occasion (if specified), generate stylish outfit suggestions.
+  Given the following description of the user's wardrobe, their preferences, and a potential occasion, generate 3-4 diverse and stylish outfit suggestions.
 
   Wardrobe Description: {{{wardrobeDescription}}}
   User Preferences: {{{userPreferences}}}
   Occasion: {{{occasion}}}
 
-  Consider the user's preferences and the occasion when generating the outfit suggestions.
-  Each suggestion should be a combination of items from the wardrobe that creates a cohesive and stylish look. 
-  Also provide a brief reasoning for why the outfit was suggested based on the inputs.
+  For each suggestion, provide:
+  1. 'outfit': The combination of items that creates a cohesive and stylish look.
+  2. 'occasion': A suitable occasion for the outfit. If a specific occasion is provided in the input, tailor some suggestions to it, but also provide options for other occasions for variety.
+  3. 'reasoning': A brief, stylish explanation for why the outfit works.
+  
+  Finally, provide an 'overallReasoning' as a general stylist's note, offering encouragement and a summary of your styling approach.
   `,
 });
 

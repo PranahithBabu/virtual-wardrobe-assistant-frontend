@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 import AppHeader from '@/components/app/AppHeader';
@@ -18,16 +19,32 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
 import type { ClosetItem, ItemCategory, ItemSeason } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
-const categories: ItemCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
-const seasons: ItemSeason[] = ['Spring', 'Summer', 'Autumn', 'Winter', 'All'];
+const allCategories: ItemCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
+const allSeasons: ItemSeason[] = ['Spring', 'Summer', 'Autumn', 'Winter', 'All'];
 
 export default function BrowsePage() {
-  const { closetItems } = useWardrobe();
+  const router = useRouter();
+  const { closetItems, deleteItem } = useWardrobe();
+  const { toast } = useToast();
   const [filters, setFilters] = useState({
     category: 'all',
     color: 'all',
@@ -35,20 +52,54 @@ export default function BrowsePage() {
   });
   const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
 
-  const colors = useMemo(() => ['all', ...Array.from(new Set(closetItems.map(item => item.color)))], [closetItems]);
+  const handleFilterChange = (filterName: keyof typeof filters) => (value: string) => {
+    setFilters(prev => ({ ...prev, [filterName]: value }));
+  };
 
   const filteredItems = useMemo(() => {
     return closetItems.filter(item => {
       const categoryMatch = filters.category === 'all' || item.category === filters.category;
       const colorMatch = filters.color === 'all' || item.color === filters.color;
-      const seasonMatch = filters.season === 'all' || item.season === filters.season || item.season === 'All';
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || item.season.includes('All');
       return categoryMatch && colorMatch && seasonMatch;
     });
   }, [closetItems, filters]);
+  
+  const availableCategories = useMemo(() => {
+    const items = closetItems.filter(item => {
+        const colorMatch = filters.color === 'all' || item.color === filters.color;
+        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || item.season.includes('All');
+        return colorMatch && seasonMatch;
+    });
+    return ['all', ...Array.from(new Set(items.map(item => item.category)))];
+  }, [closetItems, filters.color, filters.season]);
 
-  const handleFilterChange = (filterName: string) => (value: string) => {
-    setFilters(prev => ({ ...prev, [filterName]: value }));
-  };
+  const availableColors = useMemo(() => {
+    const items = closetItems.filter(item => {
+        const categoryMatch = filters.category === 'all' || item.category === filters.category;
+        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || item.season.includes('All');
+        return categoryMatch && seasonMatch;
+    });
+    return ['all', ...Array.from(new Set(items.map(item => item.color)))];
+  }, [closetItems, filters.category, filters.season]);
+
+  const availableSeasons = useMemo(() => {
+    const items = closetItems.filter(item => {
+        const categoryMatch = filters.category === 'all' || item.category === filters.category;
+        const colorMatch = filters.color === 'all' || item.color === filters.color;
+        return categoryMatch && colorMatch;
+    });
+    const seasons = new Set(items.flatMap(item => item.season));
+    return ['all', ...allSeasons.filter(s => seasons.has(s))];
+  }, [closetItems, filters.category, filters.color]);
+  
+  const handleDelete = () => {
+    if (selectedItem) {
+      deleteItem(selectedItem.id);
+      toast({ title: "Item Deleted", description: `${selectedItem.name} has been removed from your closet.`});
+      setSelectedItem(null);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -56,33 +107,35 @@ export default function BrowsePage() {
       <div className="p-4 md:p-6 lg:p-8">
         <Card className="p-4 mb-6 rounded-2xl shadow-soft border-0">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Select onValueChange={handleFilterChange('category')} defaultValue="all">
+            <Select onValueChange={handleFilterChange('category')} value={filters.category}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                {allCategories.map(cat => (
+                  <SelectItem key={cat} value={cat} disabled={!availableCategories.includes(cat) && cat !== 'all'}>{cat}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            <Select onValueChange={handleFilterChange('color')} defaultValue="all">
+            <Select onValueChange={handleFilterChange('color')} value={filters.color}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by color" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Colors</SelectItem>
-                {colors.filter(c => c !== 'all').map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+                {availableColors.filter(c => c !== 'all').map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <Select onValueChange={handleFilterChange('season')} defaultValue="all">
+            <Select onValueChange={handleFilterChange('season')} value={filters.season}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by season" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Seasons</SelectItem>
-                {seasons.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                <SelectItem value="all">Any Season</SelectItem>
+                {allSeasons.map(s => <SelectItem key={s} value={s} disabled={!availableSeasons.includes(s) && s !== 'all'}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -116,7 +169,7 @@ export default function BrowsePage() {
                 <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">{selectedItem.category}</Badge>
                     <Badge variant="secondary">{selectedItem.color}</Badge>
-                    <Badge variant="secondary">{selectedItem.season}</Badge>
+                    {selectedItem.season.map(s => <Badge key={s} variant="secondary">{s}</Badge>)}
                 </div>
                 {selectedItem.lastWorn && (
                   <p className="text-sm text-muted-foreground">
@@ -124,6 +177,26 @@ export default function BrowsePage() {
                   </p>
                 )}
             </div>
+            <DialogFooter className="sm:justify-between gap-2 mt-4">
+               <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full sm:w-auto">Delete</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete "{selectedItem.name}".
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/scan?edit=${selectedItem.id}`)}>Edit</Button>
+            </DialogFooter>
             </>
           )}
         </DialogContent>
