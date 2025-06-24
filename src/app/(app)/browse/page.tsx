@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
@@ -60,7 +60,7 @@ export default function BrowsePage() {
     return closetItems.filter(item => {
       const categoryMatch = filters.category === 'all' || item.category === filters.category;
       const colorMatch = filters.color === 'all' || item.color === filters.color;
-      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || item.season.includes('All');
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || (filters.season !== 'All' && item.season.includes('All'));
       return categoryMatch && colorMatch && seasonMatch;
     });
   }, [closetItems, filters]);
@@ -68,7 +68,7 @@ export default function BrowsePage() {
   const availableCategories = useMemo(() => {
     const items = closetItems.filter(item => {
         const colorMatch = filters.color === 'all' || item.color === filters.color;
-        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || item.season.includes('All');
+        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || (filters.season !== 'All' && item.season.includes('All'));
         return colorMatch && seasonMatch;
     });
     return ['all', ...Array.from(new Set(items.map(item => item.category)))];
@@ -77,7 +77,7 @@ export default function BrowsePage() {
   const availableColors = useMemo(() => {
     const items = closetItems.filter(item => {
         const categoryMatch = filters.category === 'all' || item.category === filters.category;
-        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || item.season.includes('All');
+        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || (filters.season !== 'All' && item.season.includes('All'));
         return categoryMatch && seasonMatch;
     });
     return ['all', ...Array.from(new Set(items.map(item => item.color)))];
@@ -92,7 +92,25 @@ export default function BrowsePage() {
     const seasons = new Set(items.flatMap(item => item.season));
     return ['all', ...allSeasons.filter(s => seasons.has(s))];
   }, [closetItems, filters.category, filters.color]);
-  
+
+  useEffect(() => {
+    if (!availableCategories.includes(filters.category)) {
+      setFilters(prev => ({ ...prev, category: 'all' }));
+    }
+  }, [availableCategories, filters.category]);
+
+  useEffect(() => {
+    if (!availableColors.includes(filters.color)) {
+      setFilters(prev => ({ ...prev, color: 'all' }));
+    }
+  }, [availableColors, filters.color]);
+
+  useEffect(() => {
+    if (!availableSeasons.includes(filters.season)) {
+      setFilters(prev => ({ ...prev, season: 'all' }));
+    }
+  }, [availableSeasons, filters.season]);
+
   const handleDelete = () => {
     if (selectedItem) {
       deleteItem(selectedItem.id);
@@ -113,8 +131,8 @@ export default function BrowsePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {allCategories.map(cat => (
-                  <SelectItem key={cat} value={cat} disabled={!availableCategories.includes(cat) && cat !== 'all'}>{cat}</SelectItem>
+                {availableCategories.filter(c => c !== 'all').map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -135,7 +153,7 @@ export default function BrowsePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Any Season</SelectItem>
-                {allSeasons.map(s => <SelectItem key={s} value={s} disabled={!availableSeasons.includes(s) && s !== 'all'}>{s}</SelectItem>)}
+                {availableSeasons.filter(s => s !== 'all').map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All-Season Items' : s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -150,7 +168,7 @@ export default function BrowsePage() {
         ) : (
           <div className="flex flex-col items-center justify-center h-96 rounded-lg border-2 border-dashed border-muted-foreground/30 text-center">
              <h2 className="text-2xl font-semibold tracking-tight font-headline">No Items Found</h2>
-             <p className="text-muted-foreground mt-2">Try adjusting your filters.</p>
+             <p className="text-muted-foreground mt-2">Try adjusting your filters or adding more items.</p>
           </div>
         )}
       </div>

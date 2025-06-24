@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -43,8 +44,9 @@ const AppSidebar = () => {
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="flex items-center justify-between">
         <Logo />
+        <SidebarTrigger className="md:hidden" />
       </SidebarHeader>
       <SidebarContent className="p-0">
         <SidebarMenu className="p-2">

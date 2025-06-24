@@ -39,10 +39,10 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   category: z.enum(categories),
   color: z.string().min(2, { message: 'Please enter a color.' }),
-  seasons: z.array(z.string()).refine((value) => value.length > 0, {
+  seasons: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: 'You have to select at least one season.',
   }),
-  image: z.any().refine((files) => files?.length > 0, 'Image is required.'),
+  image: z.any().refine((files) => files?.length > 0 || typeof files === 'string', 'Image is required.'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -80,16 +80,6 @@ export default function ScanPage() {
       setPreview(itemToEdit.imageUrl);
     }
   }, [isEditMode, itemToEdit, form]);
-  
-  // Watch for changes in 'All' season checkbox
-  const watchedSeasons = form.watch('seasons');
-  useEffect(() => {
-      const allIndex = watchedSeasons.indexOf('All');
-      if (allIndex !== -1 && watchedSeasons.length > 1) {
-          form.setValue('seasons', ['All']);
-      }
-  }, [watchedSeasons, form]);
-
 
   const onSubmit = (data: FormData) => {
     if (isEditMode && itemToEdit) {
@@ -251,16 +241,19 @@ export default function ScanPage() {
                                         checked={field.value?.includes(item)}
                                         onCheckedChange={(checked) => {
                                             if (item === 'All' && checked) {
-                                                field.onChange(['All']);
+                                                return field.onChange(['All']);
+                                            }
+                                            
+                                            const newSeasons = field.value?.filter(s => s !== 'All') || [];
+                                            
+                                            if (checked) {
+                                                field.onChange([...newSeasons, item]);
                                             } else {
-                                                const newSeasons = field.value?.filter(s => s !== 'All');
-                                                return checked
-                                                    ? field.onChange([...(newSeasons || []), item])
-                                                    : field.onChange(
-                                                        newSeasons?.filter(
-                                                            (value) => value !== item
-                                                        )
+                                                field.onChange(
+                                                    newSeasons.filter(
+                                                        (value) => value !== item
                                                     )
+                                                );
                                             }
                                         }}
                                         />

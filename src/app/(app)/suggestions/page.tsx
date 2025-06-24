@@ -66,28 +66,17 @@ export default function SuggestionsPage() {
           </div>
         )}
         {isPending && (
-            <div className='space-y-8'>
-                <Skeleton className="h-48 w-full rounded-2xl" />
-                <Skeleton className="h-48 w-full rounded-2xl" />
-                <Skeleton className="h-48 w-full rounded-2xl" />
+            <div className='space-y-4'>
+                <Skeleton className="h-24 w-full rounded-2xl" />
+                <Skeleton className="h-24 w-full rounded-2xl" />
+                <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
         )}
         {suggestions && (
-          <div className="space-y-6">
-            <Card className="rounded-2xl shadow-soft border-0">
-                <CardHeader>
-                    <CardTitle className="font-headline">AI Stylist's Note</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground italic">"{suggestions.overallReasoning}"</p>
-                </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-                {suggestions.outfitSuggestions.map((suggestion, index) => (
-                    <OutfitCard key={index} suggestion={suggestion} />
-                ))}
-            </div>
+          <div className="space-y-4">
+            {suggestions.outfitSuggestions.map((suggestion, index) => (
+                <OutfitCard key={index} suggestion={suggestion} />
+            ))}
           </div>
         )}
       </div>

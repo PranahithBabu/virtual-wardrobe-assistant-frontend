@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useTransition } from 'react';
 import { format, parse, startOfDay, isBefore } from 'date-fns';
 import { Sparkles } from 'lucide-react';
 import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 import AppHeader from '@/components/app/AppHeader';
 import { Calendar } from '@/components/ui/calendar';
+import type { DayModifiers } from 'react-day-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -22,34 +23,36 @@ import { getOutfitSuggestionsAction } from '@/app/actions';
 import OutfitCard from '@/components/OutfitCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Outfit } from '@/lib/types';
+import type { GenerateOutfitSuggestionsOutput } from '@/ai/flows/generate-outfit-suggestions';
 
+type OutfitSuggestion = GenerateOutfitSuggestionsOutput['outfitSuggestions'][0];
 
 export default function CalendarPage() {
-  const { closetItems, plannedEvents, addEvent, outfits, getOutfitById, addOutfit } = useWardrobe();
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const { closetItems, plannedEvents, addEvent, getOutfitById, addOutfit } = useWardrobe();
+  const [date, setDate] = useState<Date | undefined>();
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [occasion, setOccasion] = useState('');
-  const [suggestedOutfit, setSuggestedOutfit] = useState<Outfit | null>(null);
+  
+  const [currentSuggestion, setCurrentSuggestion] = useState<OutfitSuggestion | null>(null);
+  const [suggestedOutfitId, setSuggestedOutfitId] = useState<number | null>(null);
+
   const [manualOutfitName, setManualOutfitName] = useState("");
   const [planType, setPlanType] = useState("suggest");
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (!selectedDate) return;
-
-    if (isBefore(selectedDate, startOfDay(new Date()))) {
-        toast({ variant: "destructive", title: "Cannot plan for past dates." });
-        return;
-    }
-
-    setDate(selectedDate);
+  const handleDayClick = (day: Date, modifiers: DayModifiers) => {
+    if (modifiers.disabled) return;
+    
+    setDate(day);
     
     const existingEvent = plannedEvents.find(
-      e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+      e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
     );
     
-    setSuggestedOutfit(null);
+    // Reset states for the dialog
+    setCurrentSuggestion(null);
+    setSuggestedOutfitId(null);
     setOccasion('');
     setManualOutfitName('');
     setPlanType('suggest');
@@ -58,7 +61,18 @@ export default function CalendarPage() {
         setOccasion(existingEvent.occasion);
         const outfit = getOutfitById(existingEvent.outfitId);
         if (outfit) {
-            setSuggestedOutfit(outfit);
+            if (outfit.reasoning) { // It was a suggestion
+                setPlanType('suggest');
+                setSuggestedOutfitId(outfit.id);
+                setCurrentSuggestion({
+                    outfit: outfit.name,
+                    occasion: existingEvent.occasion,
+                    reasoning: outfit.reasoning,
+                });
+            } else { // It was a manual entry
+                setPlanType('manual');
+                setManualOutfitName(outfit.name);
+            }
         }
     }
     
@@ -86,7 +100,8 @@ export default function CalendarPage() {
           reasoning: newOutfitSuggestion.reasoning,
         };
         const newOutfitId = addOutfit(newOutfit);
-        setSuggestedOutfit({ ...newOutfit, id: newOutfitId });
+        setCurrentSuggestion(newOutfitSuggestion);
+        setSuggestedOutfitId(newOutfitId);
       } catch (error) {
         toast({ variant: "destructive", title: "Failed to get suggestion" });
       }
@@ -109,11 +124,12 @@ export default function CalendarPage() {
         if (!occasion_to_add) occasion_to_add = "General";
 
     } else { // suggest
-        if (!suggestedOutfit) {
+        if (!suggestedOutfitId || !currentSuggestion) {
             toast({ variant: "destructive", title: "Please generate an outfit first."});
             return;
         }
-        outfitId_to_add = suggestedOutfit.id;
+        outfitId_to_add = suggestedOutfitId;
+        occasion_to_add = currentSuggestion.occasion;
     }
 
     addEvent({
@@ -130,6 +146,9 @@ export default function CalendarPage() {
     const event = plannedEvents.find(e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
     if (!event) return null;
     const outfit = getOutfitById(event.outfitId);
+    if (!outfit) return null;
+
+    const cardTitle = outfit.reasoning ? 'AI-Suggested Outfit' : 'Manually Planned Outfit';
 
     return (
         <Card className="rounded-2xl shadow-soft border-0 mt-6">
@@ -138,8 +157,8 @@ export default function CalendarPage() {
                 <p className='text-sm text-muted-foreground'>Occasion: {event.occasion}</p>
             </CardHeader>
             <CardContent>
-                <p className="font-semibold mb-2">Scheduled Outfit:</p>
-                {outfit ? <OutfitCard suggestion={{ outfit: outfit.name, occasion: event.occasion, reasoning: outfit.reasoning || ''}}/> : <p>Outfit not found.</p>}
+                <p className="font-semibold mb-2">{cardTitle}</p>
+                <OutfitCard suggestion={{ outfit: outfit.name, occasion: event.occasion, reasoning: outfit.reasoning || ''}}/>
             </CardContent>
         </Card>
     );
@@ -154,7 +173,7 @@ export default function CalendarPage() {
                 <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={handleDateSelect}
+                    onDayClick={handleDayClick}
                     className="w-full"
                     disabled={{ before: startOfDay(new Date()) }}
                     modifiers={{
@@ -197,16 +216,16 @@ export default function CalendarPage() {
                 <Sparkles className="mr-2 h-4 w-4" />
                 {isPending ? 'Getting suggestion...' : 'Suggest Outfit'}
                 </Button>
-                {suggestedOutfit && (
+                {currentSuggestion && (
                 <div className="pt-4">
                     <p className="font-semibold mb-2 text-sm">Suggested:</p>
-                    <OutfitCard suggestion={{outfit: suggestedOutfit.name, occasion: occasion, reasoning: suggestedOutfit.reasoning || ''}} />
+                    <OutfitCard suggestion={currentSuggestion} />
                 </div>
                 )}
             </TabsContent>
             <TabsContent value="manual" className="space-y-4 py-4">
                 <Input
-                    placeholder="e.g., Casual brunch, Work meeting"
+                    placeholder="Occasion (optional, e.g., Work meeting)"
                     value={occasion}
                     onChange={(e) => setOccasion(e.target.value)}
                 />
@@ -219,7 +238,7 @@ export default function CalendarPage() {
           </Tabs>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddToCalendar} disabled={planType === 'suggest' && !suggestedOutfit}>Add to Calendar</Button>
+            <Button onClick={handleAddToCalendar} disabled={(planType === 'suggest' && !suggestedOutfitId) || (planType === 'manual' && !manualOutfitName)}>Add to Calendar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
