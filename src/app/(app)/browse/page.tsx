@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
@@ -33,83 +33,58 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
-import type { ClosetItem, ItemCategory, ItemSeason } from '@/lib/types';
+import type { ClosetItem, ItemSeason } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
-const allCategories: ItemCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
-const allSeasons: ItemSeason[] = ['Spring', 'Summer', 'Autumn', 'Winter', 'All'];
+const initialFilters = {
+  category: 'all',
+  color: 'all',
+  season: 'all',
+};
 
 export default function BrowsePage() {
   const router = useRouter();
   const { closetItems, deleteItem } = useWardrobe();
   const { toast } = useToast();
-  const [filters, setFilters] = useState({
-    category: 'all',
-    color: 'all',
-    season: 'all',
-  });
+  const [filters, setFilters] = useState(initialFilters);
   const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
 
   const handleFilterChange = (filterName: keyof typeof filters) => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value }));
   };
+  
+  const handleResetFilters = () => {
+    setFilters(initialFilters);
+  };
+
+  const isFiltersDefault = useMemo(() => {
+    return filters.category === 'all' && filters.color === 'all' && filters.season === 'all';
+  }, [filters]);
 
   const filteredItems = useMemo(() => {
     return closetItems.filter(item => {
       const categoryMatch = filters.category === 'all' || item.category === filters.category;
       const colorMatch = filters.color === 'all' || item.color === filters.color;
-      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || (filters.season !== 'All' && item.season.includes('All'));
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
       return categoryMatch && colorMatch && seasonMatch;
     });
   }, [closetItems, filters]);
   
   const availableCategories = useMemo(() => {
-    const items = closetItems.filter(item => {
-        const colorMatch = filters.color === 'all' || item.color === filters.color;
-        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || (filters.season !== 'All' && item.season.includes('All'));
-        return colorMatch && seasonMatch;
-    });
-    return ['all', ...Array.from(new Set(items.map(item => item.category)))];
-  }, [closetItems, filters.color, filters.season]);
+    return ['all', ...Array.from(new Set(closetItems.map(item => item.category)))];
+  }, [closetItems]);
 
   const availableColors = useMemo(() => {
-    const items = closetItems.filter(item => {
-        const categoryMatch = filters.category === 'all' || item.category === filters.category;
-        const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason) || (filters.season !== 'All' && item.season.includes('All'));
-        return categoryMatch && seasonMatch;
-    });
-    return ['all', ...Array.from(new Set(items.map(item => item.color)))];
-  }, [closetItems, filters.category, filters.season]);
+    return ['all', ...Array.from(new Set(closetItems.map(item => item.color)))];
+  }, [closetItems]);
 
   const availableSeasons = useMemo(() => {
-    const items = closetItems.filter(item => {
-        const categoryMatch = filters.category === 'all' || item.category === filters.category;
-        const colorMatch = filters.color === 'all' || item.color === filters.color;
-        return categoryMatch && colorMatch;
-    });
-    const seasons = new Set(items.flatMap(item => item.season));
-    return ['all', ...allSeasons.filter(s => seasons.has(s))];
-  }, [closetItems, filters.category, filters.color]);
-
-  useEffect(() => {
-    if (!availableCategories.includes(filters.category)) {
-      setFilters(prev => ({ ...prev, category: 'all' }));
-    }
-  }, [availableCategories, filters.category]);
-
-  useEffect(() => {
-    if (!availableColors.includes(filters.color)) {
-      setFilters(prev => ({ ...prev, color: 'all' }));
-    }
-  }, [availableColors, filters.color]);
-
-  useEffect(() => {
-    if (!availableSeasons.includes(filters.season)) {
-      setFilters(prev => ({ ...prev, season: 'all' }));
-    }
-  }, [availableSeasons, filters.season]);
+    const seasons = new Set(closetItems.flatMap(item => item.season));
+    return ['all', ...Array.from(seasons)];
+  }, [closetItems]);
+  
 
   const handleDelete = () => {
     if (selectedItem) {
@@ -124,7 +99,7 @@ export default function BrowsePage() {
       <AppHeader title="Browse Your Closet" />
       <div className="p-4 md:p-6 lg:p-8">
         <Card className="p-4 mb-6 rounded-2xl shadow-soft border-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <Select onValueChange={handleFilterChange('category')} value={filters.category}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by category" />
@@ -153,9 +128,14 @@ export default function BrowsePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Any Season</SelectItem>
-                {availableSeasons.filter(s => s !== 'all').map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All-Season Items' : s}</SelectItem>)}
+                {availableSeasons.filter(s => s !== 'all').map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex justify-end pt-4">
+              <Button variant="ghost" onClick={handleResetFilters} disabled={isFiltersDefault}>
+                  Reset Filters
+              </Button>
           </div>
         </Card>
 

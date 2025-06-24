@@ -1,19 +1,13 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Shirt, Info } from 'lucide-react';
+import { Shirt } from 'lucide-react';
 import { Badge } from './ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 interface OutfitCardProps {
   suggestion: {
     outfit: string;
     occasion: string;
-    reasoning: string;
+    reasoning?: string;
   };
 }
 
@@ -28,19 +22,10 @@ const OutfitCard = ({ suggestion }: OutfitCardProps) => {
             <p className="font-medium text-foreground">{suggestion.outfit}</p>
             <div className='flex items-center gap-2 mt-2'>
               <Badge variant="secondary">{suggestion.occasion}</Badge>
-              {suggestion.reasoning && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{suggestion.reasoning}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
             </div>
+             {suggestion.reasoning && (
+              <p className="text-sm text-muted-foreground mt-2">{suggestion.reasoning}</p>
+            )}
         </div>
       </CardContent>
     </Card>

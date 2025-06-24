@@ -22,7 +22,7 @@ const Logo = () => (
         fill="currentColor"
       />
     </svg>
-    <span className="text-xl font-bold text-foreground font-headline group-data-[collapsible=icon]/sidebar-wrapper:hidden">StyleAI</span>
+    <span className="text-xl font-bold text-sidebar-foreground font-headline group-data-[collapsible=icon]:hidden">StyleAI</span>
   </div>
 );
 
