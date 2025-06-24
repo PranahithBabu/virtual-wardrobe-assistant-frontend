@@ -52,11 +52,11 @@ export default function BrowsePage() {
   const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
 
   const handleCategoryChange = (value: string) => {
-    setFilters({ category: value, color: 'all', season: 'all' });
+    setFilters(prev => ({ ...prev, category: value }));
   };
   
   const handleColorChange = (value: string) => {
-    setFilters(prev => ({ ...prev, color: value, season: 'all' }));
+    setFilters(prev => ({ ...prev, color: value }));
   };
 
   const handleSeasonChange = (value: string) => {
@@ -81,13 +81,22 @@ export default function BrowsePage() {
   }, [closetItems, filters]);
   
   const availableCategories = useMemo(() => {
-    return ['all', ...Array.from(new Set(closetItems.map(item => item.category)))];
-  }, [closetItems]);
+    const items = closetItems.filter(item => {
+      const colorMatch = filters.color === 'all' || item.color === filters.color;
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
+      return colorMatch && seasonMatch;
+    });
+    return ['all', ...Array.from(new Set(items.map(item => item.category)))];
+  }, [closetItems, filters.color, filters.season]);
 
   const availableColors = useMemo(() => {
-    const items = closetItems.filter(item => filters.category === 'all' || item.category === filters.category);
+    const items = closetItems.filter(item => {
+      const categoryMatch = filters.category === 'all' || item.category === filters.category;
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
+      return categoryMatch && seasonMatch;
+    });
     return ['all', ...Array.from(new Set(items.map(item => item.color)))];
-  }, [closetItems, filters.category]);
+  }, [closetItems, filters.category, filters.season]);
 
   const availableSeasons = useMemo(() => {
     const items = closetItems.filter(item => {
@@ -119,9 +128,8 @@ export default function BrowsePage() {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {availableCategories.filter(c => c !== 'all').map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {availableCategories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -131,8 +139,7 @@ export default function BrowsePage() {
                 <SelectValue placeholder="Filter by color" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Colors</SelectItem>
-                {availableColors.filter(c => c !== 'all').map(color => <SelectItem key={color} value={color}>{color}</SelectItem>)}
+                {availableColors.map(color => <SelectItem key={color} value={color}>{color === 'all' ? 'All Colors' : color}</SelectItem>)}
               </SelectContent>
             </Select>
 
@@ -141,8 +148,7 @@ export default function BrowsePage() {
                 <SelectValue placeholder="Filter by season" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Any Season</SelectItem>
-                {availableSeasons.filter(s => s !== 'all').map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All-Season Wear' : s}</SelectItem>)}
+                {availableSeasons.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'Any Season' : (s === 'All' ? 'All-Season Wear' : s)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
