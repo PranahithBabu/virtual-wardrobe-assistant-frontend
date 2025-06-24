@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -33,6 +34,7 @@ import { Button } from '../ui/button';
 
 const AppSidebar = () => {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
 
   const menuItems = [
     { href: '/closet', label: 'My Closet', icon: Home },
@@ -40,6 +42,10 @@ const AppSidebar = () => {
     { href: '/suggestions', label: 'Outfit Suggestions', icon: Sparkles },
     { href: '/calendar', label: 'Calendar Planner', icon: Calendar },
   ];
+
+  const handleNavigation = () => {
+    setOpenMobile(false);
+  };
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -54,6 +60,7 @@ const AppSidebar = () => {
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   tooltip={item.label}
+                  onClick={handleNavigation}
                 >
                   <item.icon />
                   <span>{item.label}</span>
@@ -66,7 +73,7 @@ const AppSidebar = () => {
       <SidebarFooter>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[state=collapsed]:w-auto group-data-[state=collapsed]:h-auto group-data-[state=collapsed]:aspect-square">
+                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[state=collapsed]:w-auto group-data-[state=collapsed]:h-auto group-data-[state=collapsed]:aspect-square group-data-[state=collapsed]:hover:bg-transparent">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
                         <AvatarFallback>U</AvatarFallback>
@@ -76,13 +83,13 @@ const AppSidebar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="end" className="w-56">
                 <DropdownMenuItem asChild>
-                    <Link href="/profile">
+                    <Link href="/profile" onClick={handleNavigation}>
                         <User className="mr-2 h-4 w-4" />
                         <span>View Profile</span>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleNavigation}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>
                 </DropdownMenuItem>
