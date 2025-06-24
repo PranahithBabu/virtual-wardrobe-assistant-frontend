@@ -145,14 +145,14 @@ export default function ScanPage() {
                       <FormControl>
                         <div className="w-full">
                             {preview ? (
-                                <div className='relative w-48 h-64 mx-auto'>
+                                <div className='relative w-40 h-56 sm:w-48 sm:h-64 mx-auto'>
                                     <Image src={preview} alt="Preview" fill className="rounded-lg object-cover" />
                                     <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 rounded-full h-7 w-7 z-10" onClick={clearPreview}>
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
                             ) : (
-                                <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary">
+                                <label className="flex flex-col items-center justify-center w-full h-56 sm:h-64 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary">
                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                         <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
                                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>

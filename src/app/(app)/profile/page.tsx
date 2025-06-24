@@ -29,12 +29,12 @@ export default function ProfilePage() {
       <AppHeader title="Profile & Settings" />
       <div className="flex-grow p-4 md:p-6 lg:p-8 space-y-8">
         <Card className="rounded-2xl shadow-soft border-0">
-          <CardContent className="p-6 flex items-center gap-6">
-            <Avatar className="h-24 w-24 border-4 border-background ring-4 ring-primary">
+          <CardContent className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
+            <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background ring-4 ring-primary">
               <AvatarImage src="https://placehold.co/100x100.png" alt="@user" />
               <AvatarFallback>U</AvatarFallback>
             </Avatar>
-            <div>
+            <div className="flex-grow">
               <h2 className="text-2xl font-bold font-headline">User</h2>
               <p className="text-muted-foreground">user@styleai.com</p>
               <Button variant="destructive" className="mt-4">
@@ -50,12 +50,12 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className="font-headline">Wardrobe Stats</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="flex justify-between items-center">
+                <CardContent>
+                     <div className="flex justify-between items-center py-2">
                         <span className="text-muted-foreground">Total Items</span>
                         <span className="font-bold text-2xl text-primary">{stats.totalItems}</span>
                     </div>
-                     <div className="flex justify-between items-center">
+                     <div className="flex justify-between items-center py-2">
                         <span className="text-muted-foreground">Categories</span>
                         <span className="font-bold text-2xl text-primary">{stats.categoryCount.length}</span>
                     </div>
@@ -67,7 +67,7 @@ export default function ProfilePage() {
                     <CardTitle className="font-headline">Items by Category</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-64 w-full">
+                    <div className="h-56 sm:h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={stats.categoryCount} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />

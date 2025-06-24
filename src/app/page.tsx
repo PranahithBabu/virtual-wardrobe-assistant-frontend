@@ -7,13 +7,13 @@ import Logo from '@/components/Logo';
 export default function OnboardingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="container mx-auto px-4 sm:px-6 py-4">
+      <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <Logo />
       </header>
 
       <main className="flex-grow">
-        <section className="container mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground font-headline">
+        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground font-headline">
             Meet Your Personal Stylist
           </h1>
           <p className="mt-4 max-w-2xl mx-auto text-lg sm:text-xl text-muted-foreground">
@@ -29,7 +29,7 @@ export default function OnboardingPage() {
         </section>
 
         <section className="bg-secondary/50">
-          <div className="container mx-auto px-4 sm:px-6 py-16 sm:py-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold font-headline">Why You'll Love StyleAI</h2>
               <p className="mt-3 max-w-2xl mx-auto text-md text-muted-foreground">
