@@ -44,9 +44,9 @@ const AppSidebar = () => {
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarHeader className="flex items-center justify-between">
+      <SidebarHeader className="flex items-center group-data-[collapsible=icon]:justify-center justify-between">
         <Logo />
-        <SidebarTrigger className="md:hidden" />
+        <SidebarTrigger className="md:hidden group-data-[collapsible=icon]:hidden" />
       </SidebarHeader>
       <SidebarContent className="p-0">
         <SidebarMenu className="p-2">

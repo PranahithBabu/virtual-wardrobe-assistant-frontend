@@ -128,7 +128,7 @@ export default function BrowsePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Any Season</SelectItem>
-                {availableSeasons.filter(s => s !== 'all').map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {availableSeasons.filter(s => s !== 'all').map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All-Season Wear' : s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
