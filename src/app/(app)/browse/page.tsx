@@ -51,8 +51,16 @@ export default function BrowsePage() {
   const [filters, setFilters] = useState(initialFilters);
   const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
 
-  const handleFilterChange = (filterName: keyof typeof filters) => (value: string) => {
-    setFilters(prev => ({ ...prev, [filterName]: value }));
+  const handleCategoryChange = (value: string) => {
+    setFilters({ category: value, color: 'all', season: 'all' });
+  };
+  
+  const handleColorChange = (value: string) => {
+    setFilters(prev => ({ ...prev, color: value, season: 'all' }));
+  };
+
+  const handleSeasonChange = (value: string) => {
+    setFilters(prev => ({ ...prev, season: value }));
   };
   
   const handleResetFilters = () => {
@@ -77,13 +85,19 @@ export default function BrowsePage() {
   }, [closetItems]);
 
   const availableColors = useMemo(() => {
-    return ['all', ...Array.from(new Set(closetItems.map(item => item.color)))];
-  }, [closetItems]);
+    const items = closetItems.filter(item => filters.category === 'all' || item.category === filters.category);
+    return ['all', ...Array.from(new Set(items.map(item => item.color)))];
+  }, [closetItems, filters.category]);
 
   const availableSeasons = useMemo(() => {
-    const seasons = new Set(closetItems.flatMap(item => item.season));
+    const items = closetItems.filter(item => {
+        const categoryMatch = filters.category === 'all' || item.category === filters.category;
+        const colorMatch = filters.color === 'all' || item.color === filters.color;
+        return categoryMatch && colorMatch;
+    });
+    const seasons = new Set(items.flatMap(item => item.season));
     return ['all', ...Array.from(seasons)];
-  }, [closetItems]);
+  }, [closetItems, filters.category, filters.color]);
   
 
   const handleDelete = () => {
@@ -100,7 +114,7 @@ export default function BrowsePage() {
       <div className="p-4 md:p-6 lg:p-8">
         <Card className="p-4 mb-6 rounded-2xl shadow-soft border-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <Select onValueChange={handleFilterChange('category')} value={filters.category}>
+            <Select onValueChange={handleCategoryChange} value={filters.category}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
@@ -112,7 +126,7 @@ export default function BrowsePage() {
               </SelectContent>
             </Select>
 
-            <Select onValueChange={handleFilterChange('color')} value={filters.color}>
+            <Select onValueChange={handleColorChange} value={filters.color}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by color" />
               </SelectTrigger>
@@ -122,7 +136,7 @@ export default function BrowsePage() {
               </SelectContent>
             </Select>
 
-            <Select onValueChange={handleFilterChange('season')} value={filters.season}>
+            <Select onValueChange={handleSeasonChange} value={filters.season}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by season" />
               </SelectTrigger>
