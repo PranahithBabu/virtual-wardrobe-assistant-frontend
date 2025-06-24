@@ -34,7 +34,7 @@ import { Button } from '../ui/button';
 
 const AppSidebar = () => {
   const pathname = usePathname();
-  const { setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const menuItems = [
     { href: '/closet', label: 'My Closet', icon: Home },
@@ -44,7 +44,9 @@ const AppSidebar = () => {
   ];
 
   const handleNavigation = () => {
-    setOpenMobile(false);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   return (
@@ -73,7 +75,7 @@ const AppSidebar = () => {
       <SidebarFooter>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[state=collapsed]:w-auto group-data-[state=collapsed]:h-auto group-data-[state=collapsed]:aspect-square group-data-[state=collapsed]:hover:bg-transparent">
+                <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[state=collapsed]:w-auto group-data-[state=collapsed]:h-auto group-data-[state=collapsed]:aspect-square group-data-[state=collapsed]:hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
                         <AvatarFallback>U</AvatarFallback>
@@ -81,7 +83,7 @@ const AppSidebar = () => {
                     <span className="group-data-[state=collapsed]:hidden">User</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="end" className="w-56">
+            <DropdownMenuContent side={isMobile ? 'top' : 'right'} align="end" className="w-56">
                 <DropdownMenuItem asChild>
                     <Link href="/profile" onClick={handleNavigation}>
                         <User className="mr-2 h-4 w-4" />
