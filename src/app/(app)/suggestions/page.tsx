@@ -50,9 +50,14 @@ export default function SuggestionsPage() {
   return (
     <div className="flex flex-col h-full">
       <AppHeader title="Outfit Suggestions">
-        <Button onClick={handleGetSuggestions} disabled={isPending}>
-          <Sparkles className="mr-2 h-4 w-4" />
-          {isPending ? 'Generating...' : 'Surprise Me'}
+        <Button onClick={handleGetSuggestions} disabled={isPending} size="icon" className="sm:w-auto sm:px-4">
+          <Sparkles className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {isPending ? 'Generating...' : 'Surprise Me'}
+          </span>
+           <span className="sr-only">
+            {isPending ? 'Generating outfit suggestions' : 'Get new outfit suggestions'}
+          </span>
         </Button>
       </AppHeader>
       <div className="flex-grow p-4 sm:p-6">
@@ -66,14 +71,14 @@ export default function SuggestionsPage() {
           </div>
         )}
         {isPending && (
-            <div className='space-y-4'>
-                <Skeleton className="h-24 w-full rounded-2xl" />
-                <Skeleton className="h-24 w-full rounded-2xl" />
-                <Skeleton className="h-24 w-full rounded-2xl" />
+            <div className='grid grid-cols-1 gap-4'>
+                <Skeleton className="h-28 w-full rounded-2xl" />
+                <Skeleton className="h-28 w-full rounded-2xl" />
+                <Skeleton className="h-28 w-full rounded-2xl" />
             </div>
         )}
         {suggestions && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             {suggestions.outfitSuggestions.map((suggestion, index) => (
                 <OutfitCard key={index} suggestion={suggestion} />
             ))}
