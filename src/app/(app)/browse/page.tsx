@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -166,10 +167,10 @@ export default function BrowsePage() {
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
-        <DialogContent className="sm:max-w-md md:max-w-2xl rounded-2xl max-h-[90vh] p-0 flex-col md:flex-row md:items-start gap-0">
+        <DialogContent className="sm:max-w-md md:max-w-3xl rounded-2xl max-h-[90vh] md:h-[520px] p-0 flex flex-col md:flex-row md:items-stretch gap-0">
           {selectedItem && (
             <>
-              <div className="relative w-full aspect-square md:w-1/2 md:h-full md:aspect-auto">
+              <div className="relative w-full aspect-square md:w-1/2 md:aspect-auto">
                 <Image
                   src={selectedItem.imageUrl}
                   alt={selectedItem.name}
@@ -177,7 +178,7 @@ export default function BrowsePage() {
                   className="object-cover md:rounded-l-2xl"
                 />
               </div>
-              <div className="flex flex-col flex-1 max-h-full">
+              <div className="flex flex-col md:w-1/2">
                 <DialogHeader className="p-4 sm:p-6 pb-4 flex-shrink-0">
                   <DialogTitle className="text-2xl font-headline">{selectedItem.name}</DialogTitle>
                 </DialogHeader>
