@@ -66,36 +66,38 @@ export default function CalendarPage() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  // Effect to reset the form when opening for a NEW event
   useEffect(() => {
-    if (isDialogOpen) {
-      if (selectedEvent) {
-        // Editing an existing event
-        const outfit = getOutfitById(selectedEvent.outfitId);
-        setOccasion(selectedEvent.occasion);
-        if (outfit) {
-          if (outfit.reasoning) { // AI-suggested outfit
-            setPlanType('suggest');
-            setManualOutfitName('');
-            setCurrentSuggestion({
-              outfit: outfit.name,
-              occasion: selectedEvent.occasion,
-              reasoning: outfit.reasoning,
-            });
-            setSuggestedOutfitId(outfit.id);
-          } else { // Manually entered outfit
-            setPlanType('manual');
-            setManualOutfitName(outfit.name);
-            setCurrentSuggestion(null);
-            setSuggestedOutfitId(null);
-          }
+    if (isDialogOpen && !selectedEvent) {
+      setOccasion('');
+      setCurrentSuggestion(null);
+      setSuggestedOutfitId(null);
+      setManualOutfitName('');
+      setPlanType('suggest');
+    }
+  }, [isDialogOpen, selectedEvent]);
+
+  // Effect to populate the form when opening to EDIT an event
+  useEffect(() => {
+    if (isDialogOpen && selectedEvent) {
+      const outfit = getOutfitById(selectedEvent.outfitId);
+      setOccasion(selectedEvent.occasion);
+      if (outfit) {
+        if (outfit.reasoning) { // AI-suggested outfit
+          setPlanType('suggest');
+          setManualOutfitName('');
+          setCurrentSuggestion({
+            outfit: outfit.name,
+            occasion: selectedEvent.occasion,
+            reasoning: outfit.reasoning,
+          });
+          setSuggestedOutfitId(outfit.id);
+        } else { // Manually entered outfit
+          setPlanType('manual');
+          setManualOutfitName(outfit.name);
+          setCurrentSuggestion(null);
+          setSuggestedOutfitId(null);
         }
-      } else {
-        // Adding a new event, reset everything
-        setOccasion('');
-        setCurrentSuggestion(null);
-        setSuggestedOutfitId(null);
-        setManualOutfitName('');
-        setPlanType('suggest');
       }
     }
   }, [isDialogOpen, selectedEvent, getOutfitById]);
