@@ -77,31 +77,6 @@ export default function CalendarPage() {
     }
   }, [isDialogOpen, selectedEvent]);
 
-  // Effect to populate the form when opening to EDIT an event
-  useEffect(() => {
-    if (isDialogOpen && selectedEvent) {
-      const outfit = getOutfitById(selectedEvent.outfitId);
-      setOccasion(selectedEvent.occasion);
-      if (outfit) {
-        if (outfit.reasoning) { // AI-suggested outfit
-          setPlanType('suggest');
-          setManualOutfitName('');
-          setCurrentSuggestion({
-            outfit: outfit.name,
-            occasion: selectedEvent.occasion,
-            reasoning: outfit.reasoning,
-          });
-          setSuggestedOutfitId(outfit.id);
-        } else { // Manually entered outfit
-          setPlanType('manual');
-          setManualOutfitName(outfit.name);
-          setCurrentSuggestion(null);
-          setSuggestedOutfitId(null);
-        }
-      }
-    }
-  }, [isDialogOpen, selectedEvent, getOutfitById]);
-
   const handleDayClick = (day: Date, modifiers: DayModifiers) => {
     if (modifiers.disabled) return;
     setDate(day);
@@ -114,6 +89,25 @@ export default function CalendarPage() {
 
   const handleOpenDialogForEdit = (event: PlannedEvent) => {
     setSelectedEvent(event);
+    const outfit = getOutfitById(event.outfitId);
+    setOccasion(event.occasion);
+    if (outfit) {
+      if (outfit.reasoning) { // AI-suggested outfit
+        setPlanType('suggest');
+        setManualOutfitName('');
+        setCurrentSuggestion({
+          outfit: outfit.name,
+          occasion: event.occasion,
+          reasoning: outfit.reasoning,
+        });
+        setSuggestedOutfitId(outfit.id);
+      } else { // Manually entered outfit
+        setPlanType('manual');
+        setManualOutfitName(outfit.name);
+        setCurrentSuggestion(null);
+        setSuggestedOutfitId(null);
+      }
+    }
     setDialogOpen(true);
   };
 
@@ -290,7 +284,7 @@ export default function CalendarPage() {
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl flex flex-col max-h-[90dvh]">
           <DialogHeader className="p-4 sm:p-6 pb-2">
-            <DialogTitle className="text-lg">{selectedEvent ? 'Edit Plan' : 'Plan an Outfit'}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">{selectedEvent ? 'Edit Plan' : 'Plan an Outfit'}</DialogTitle>
             <DialogDescription>
               For {date ? format(date, 'MMMM d, yyyy') : ''}
             </DialogDescription>
