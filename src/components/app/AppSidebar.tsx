@@ -23,7 +23,6 @@ import {
 import {
   Home,
   Sparkles,
-  Search,
   Calendar,
   LogOut,
   User,
@@ -40,7 +39,6 @@ const AppSidebar = () => {
 
   const menuItems = [
     { href: '/closet', label: 'My Closet', icon: Home },
-    { href: '/browse', label: 'Browse Items', icon: Search },
     { href: '/suggestions', label: 'Outfit Suggestions', icon: Sparkles },
     { href: '/calendar', label: 'Calendar Planner', icon: Calendar },
   ];
