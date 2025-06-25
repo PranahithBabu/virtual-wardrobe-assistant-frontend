@@ -147,7 +147,7 @@ export default function ClosetPage() {
                     <SelectValue placeholder="Filter by season" />
                     </SelectTrigger>
                     <SelectContent>
-                    {availableSeasons.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'Any Season' : (s === 'All' ? 'All-Season Wear' : s)}</SelectItem>)}
+                    {availableSeasons.map(s => <SelectItem key={s} value={s}>{s === 'all' ? 'Any Season' : (s === 'All' ? 'All Seasons' : s)}</SelectItem>)}
                     </SelectContent>
                 </Select>
                 </div>
@@ -202,7 +202,7 @@ export default function ClosetPage() {
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">{selectedItem.category}</Badge>
                     <Badge variant="secondary">{selectedItem.color}</Badge>
-                    {selectedItem.season.map(s => <Badge key={s} variant="secondary">{s}</Badge>)}
+                    {selectedItem.season.map(s => <Badge key={s} variant="secondary">{s === 'All' ? 'All Seasons' : s}</Badge>)}
                   </div>
                   {selectedItem.lastWorn && (
                     <p className="text-sm text-muted-foreground">
