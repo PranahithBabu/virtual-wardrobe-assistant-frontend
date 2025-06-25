@@ -74,13 +74,6 @@ export default function SuggestionsPage() {
         )}
         {suggestions && (
           <div className="space-y-4">
-            {suggestions.overallReasoning && (
-                <Card className="rounded-2xl shadow-soft border-0 bg-primary/10">
-                    <CardContent className="p-4">
-                        <p className="text-primary-foreground/90 font-medium text-center">{suggestions.overallReasoning}</p>
-                    </CardContent>
-                </Card>
-            )}
             {suggestions.outfitSuggestions.map((suggestion, index) => (
                 <OutfitCard key={index} suggestion={suggestion} />
             ))}

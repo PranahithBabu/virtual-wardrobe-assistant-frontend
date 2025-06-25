@@ -45,11 +45,6 @@ const GenerateOutfitSuggestionsOutputSchema = z.object({
     .describe(
       'An array of 3-4 diverse outfit suggestions, each with a description, suitable occasion, and reasoning.'
     ),
-    overallReasoning: z
-    .string()
-    .describe(
-      'A general, encouraging explanation of the styling approach for the generated outfits, acting as a stylist\'s note.'
-    ),
 });
 export type GenerateOutfitSuggestionsOutput = z.infer<
   typeof GenerateOutfitSuggestionsOutputSchema
@@ -77,8 +72,6 @@ const outfitSuggestionsPrompt = ai.definePrompt({
   1. 'outfit': The combination of items that creates a cohesive and stylish look.
   2. 'occasion': A suitable occasion for the outfit. If a specific occasion is provided in the input, tailor some suggestions to it, but also provide options for other occasions for variety.
   3. 'reasoning': A brief, stylish explanation for why the outfit works.
-  
-  Finally, provide an 'overallReasoning' as a general stylist's note, offering encouragement and a summary of your styling approach.
   `,
 });
 
