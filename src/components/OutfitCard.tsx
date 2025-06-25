@@ -19,7 +19,7 @@ const OutfitCard = ({ suggestion }: OutfitCardProps) => {
             <Shirt className="h-6 w-6 text-primary" />
         </div>
         <div className='flex-grow'>
-            <p className="font-medium text-foreground">{suggestion.outfit}</p>
+            <p className="text-sm font-medium text-foreground">{suggestion.outfit}</p>
             <div className='flex items-center gap-2 mt-2'>
               <Badge variant="secondary">{suggestion.occasion}</Badge>
             </div>
