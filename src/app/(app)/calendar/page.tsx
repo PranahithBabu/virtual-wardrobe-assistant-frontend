@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
-import { format, parse, startOfDay, isBefore } from 'date-fns';
-import { Sparkles } from 'lucide-react';
+import React, { useState, useTransition, useEffect } from 'react';
+import { format, parse, startOfDay } from 'date-fns';
+import { Sparkles, Edit, Trash2 } from 'lucide-react';
+
 import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 import AppHeader from '@/components/app/AppHeader';
 import { Calendar } from '@/components/ui/calendar';
@@ -16,68 +17,116 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getOutfitSuggestionsAction } from '@/app/actions';
 import OutfitCard from '@/components/OutfitCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Outfit } from '@/lib/types';
+import type { Outfit, PlannedEvent } from '@/lib/types';
 import type { GenerateOutfitSuggestionsOutput } from '@/ai/flows/generate-outfit-suggestions';
+import { Badge } from '@/components/ui/badge';
 
 type OutfitSuggestion = GenerateOutfitSuggestionsOutput['outfitSuggestions'][0];
 
 export default function CalendarPage() {
-  const { closetItems, plannedEvents, addEvent, getOutfitById, addOutfit } = useWardrobe();
-  const [date, setDate] = useState<Date | undefined>();
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [occasion, setOccasion] = useState('');
+  const { 
+    closetItems, 
+    plannedEvents, 
+    addEvent, 
+    updateEvent,
+    deleteEvent,
+    getOutfitById, 
+    addOutfit 
+  } = useWardrobe();
   
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<PlannedEvent | null>(null);
+  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
+
+  // Dialog form state
+  const [occasion, setOccasion] = useState('');
   const [currentSuggestion, setCurrentSuggestion] = useState<OutfitSuggestion | null>(null);
   const [suggestedOutfitId, setSuggestedOutfitId] = useState<number | null>(null);
-
   const [manualOutfitName, setManualOutfitName] = useState("");
   const [planType, setPlanType] = useState("suggest");
+  
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (isDialogOpen) {
+      if (selectedEvent) {
+        // Editing an existing event
+        const outfit = getOutfitById(selectedEvent.outfitId);
+        setOccasion(selectedEvent.occasion);
+        if (outfit) {
+          if (outfit.reasoning) { // AI-suggested outfit
+            setPlanType('suggest');
+            setManualOutfitName('');
+            setCurrentSuggestion({
+              outfit: outfit.name,
+              occasion: selectedEvent.occasion,
+              reasoning: outfit.reasoning,
+            });
+            setSuggestedOutfitId(outfit.id);
+          } else { // Manually entered outfit
+            setPlanType('manual');
+            setManualOutfitName(outfit.name);
+            setCurrentSuggestion(null);
+            setSuggestedOutfitId(null);
+          }
+        }
+      } else {
+        // Adding a new event, reset everything
+        setOccasion('');
+        setCurrentSuggestion(null);
+        setSuggestedOutfitId(null);
+        setManualOutfitName('');
+        setPlanType('suggest');
+      }
+    }
+  }, [isDialogOpen, selectedEvent, getOutfitById]);
+
   const handleDayClick = (day: Date, modifiers: DayModifiers) => {
     if (modifiers.disabled) return;
-    
     setDate(day);
-    
-    const existingEvent = plannedEvents.find(
-      e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
-    );
-    
-    setCurrentSuggestion(null);
-    setSuggestedOutfitId(null);
-    setOccasion('');
-    setManualOutfitName('');
-    setPlanType('suggest');
+  };
 
-    if (existingEvent) {
-        setOccasion(existingEvent.occasion);
-        const outfit = getOutfitById(existingEvent.outfitId);
-        if (outfit) {
-            if (outfit.reasoning) {
-                setPlanType('suggest');
-                setSuggestedOutfitId(outfit.id);
-                setCurrentSuggestion({
-                    outfit: outfit.name,
-                    occasion: existingEvent.occasion,
-                    reasoning: outfit.reasoning,
-                });
-            } else {
-                setPlanType('manual');
-                setManualOutfitName(outfit.name);
-            }
-        }
-    }
-    
+  const handleOpenDialogForNew = () => {
+    setSelectedEvent(null);
     setDialogOpen(true);
   };
+
+  const handleOpenDialogForEdit = (event: PlannedEvent) => {
+    setSelectedEvent(event);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteRequest = (eventId: string) => {
+    setEventToDeleteId(eventId);
+  };
   
+  const handleConfirmDelete = () => {
+    if (eventToDeleteId) {
+      deleteEvent(eventToDeleteId);
+      toast({ title: "Event Deleted", description: "The planned outfit has been removed." });
+      setEventToDeleteId(null);
+    }
+  };
+
   const handleGetSuggestion = () => {
     if (!occasion) {
         toast({ variant: "destructive", title: "Please enter an occasion."});
@@ -107,7 +156,7 @@ export default function CalendarPage() {
     });
   };
 
-  const handleAddToCalendar = () => {
+  const handleSaveEvent = () => {
     if (!date) return;
     
     let outfitId_to_add: number | null = null;
@@ -124,42 +173,85 @@ export default function CalendarPage() {
 
     } else { 
         if (!suggestedOutfitId || !currentSuggestion) {
-            toast({ variant: "destructive", title: "Please generate an outfit first."});
+            toast({ variant: "destructive", title: "Please generate or select an outfit first."});
             return;
         }
         outfitId_to_add = suggestedOutfitId;
         occasion_to_add = currentSuggestion.occasion;
     }
 
-    addEvent({
+    const eventData = {
       date: format(date, 'yyyy-MM-dd'),
       occasion: occasion_to_add,
       outfitId: outfitId_to_add,
-    });
+    };
+    
+    if (selectedEvent) {
+        updateEvent(selectedEvent.id, eventData);
+        toast({ title: "Event Updated", description: "Your plan has been successfully updated." });
+    } else {
+        addEvent(eventData);
+        toast({ title: "Event Added", description: "Outfit has been scheduled." });
+    }
 
     setDialogOpen(false);
-    toast({ title: "Event Added", description: "Outfit has been scheduled." });
   };
   
-  const EventDisplay = ({ date }: { date: Date }) => {
-    const event = plannedEvents.find(e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
-    if (!event) return null;
-    const outfit = getOutfitById(event.outfitId);
-    if (!outfit) return null;
-
-    const cardTitle = outfit.reasoning ? 'AI-Suggested Outfit' : 'Manually Planned Outfit';
+  const EventsForDay = ({ selectedDate }: { selectedDate: Date }) => {
+    const eventsForDay = plannedEvents
+      .filter(e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
+      .sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
     return (
-        <Card className="rounded-2xl shadow-soft border-0 mt-6 lg:mt-0">
-            <CardHeader>
-                <CardTitle className="font-headline text-lg sm:text-xl">{format(date, 'MMMM d, yyyy')}</CardTitle>
-                <p className='text-sm text-muted-foreground'>Occasion: {event.occasion}</p>
-            </CardHeader>
-            <CardContent>
-                <p className="font-semibold mb-2 text-base">{cardTitle}</p>
-                <OutfitCard suggestion={{ outfit: outfit.name, occasion: event.occasion, reasoning: outfit.reasoning || ''}}/>
-            </CardContent>
-        </Card>
+      <Card className="rounded-2xl shadow-soft border-0 lg:sticky lg:top-24">
+        <CardHeader>
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex-1">
+              <CardTitle className="font-headline text-lg sm:text-xl">{format(selectedDate, 'MMMM d, yyyy')}</CardTitle>
+              <p className='text-sm text-muted-foreground mt-1'>
+                {eventsForDay.length > 0 ? `${eventsForDay.length} outfit${eventsForDay.length > 1 ? 's' : ''} planned` : 'No outfits planned'}
+              </p>
+            </div>
+            <Button onClick={handleOpenDialogForNew} size="sm">Plan Outfit</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {eventsForDay.length > 0 ? (
+            <div className="space-y-3">
+              {eventsForDay.map(event => {
+                const outfit = getOutfitById(event.outfitId);
+                if (!outfit) return null;
+                
+                return (
+                  <Card key={event.id} className="rounded-xl shadow-sm border p-3">
+                    <div className="flex justify-between items-start gap-2">
+                       <div className="flex-1">
+                         <p className="font-semibold text-sm">{outfit.name}</p>
+                         <p className="text-xs text-muted-foreground">{event.occasion}</p>
+                         {outfit.reasoning && <Badge variant="outline" className="mt-2 text-xs">AI Suggested</Badge>}
+                       </div>
+                       <div className="flex items-center gap-0">
+                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialogForEdit(event)}>
+                           <Edit className="h-4 w-4" />
+                           <span className="sr-only">Edit</span>
+                         </Button>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(event.id)}>
+                           <Trash2 className="h-4 w-4" />
+                           <span className="sr-only">Delete</span>
+                         </Button>
+                       </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          ) : (
+             <div className="text-center py-8 text-sm text-muted-foreground">
+                <p>Click 'Plan Outfit' to add a new plan for this day.</p>
+             </div>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
@@ -172,6 +264,7 @@ export default function CalendarPage() {
                 <Calendar
                     mode="single"
                     selected={date}
+                    onSelect={setDate}
                     onDayClick={handleDayClick}
                     className="w-full"
                     disabled={{ before: startOfDay(new Date()) }}
@@ -188,16 +281,16 @@ export default function CalendarPage() {
             </Card>
         </div>
         <div className="lg:col-span-1">
-            {date && <EventDisplay date={date} />}
+            {date && <EventsForDay selectedDate={date} />}
         </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-2xl max-h-[90dvh] p-0">
-          <DialogHeader className="p-4 sm:p-6 pb-4">
-            <DialogTitle>Plan for {date ? format(date, 'MMMM d, yyyy') : ''}</DialogTitle>
+        <DialogContent className="sm:max-w-md rounded-2xl flex flex-col max-h-[90dvh]">
+          <DialogHeader className="p-4 sm:p-6 pb-2">
+            <DialogTitle className="text-lg">{selectedEvent ? 'Edit Plan' : 'Plan an Outfit'}</DialogTitle>
             <DialogDescription>
-              Suggest an outfit with AI or manually enter one.
+              For {date ? format(date, 'MMMM d, yyyy') : ''}
             </DialogDescription>
           </DialogHeader>
           <div className="flex-grow overflow-y-auto px-4 sm:px-6">
@@ -239,10 +332,27 @@ export default function CalendarPage() {
           </div>
           <DialogFooter className="p-4 sm:p-6 pt-4 border-t mt-auto">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddToCalendar} disabled={(planType === 'suggest' && !suggestedOutfitId) || (planType === 'manual' && !manualOutfitName)}>Add to Calendar</Button>
+            <Button onClick={handleSaveEvent} disabled={(planType === 'suggest' && !suggestedOutfitId) || (planType === 'manual' && !manualOutfitName)}>
+                {selectedEvent ? 'Update Plan' : 'Add to Calendar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={!!eventToDeleteId} onOpenChange={(isOpen) => !isOpen && setEventToDeleteId(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this planned outfit.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

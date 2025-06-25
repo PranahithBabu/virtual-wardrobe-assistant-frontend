@@ -21,6 +21,8 @@ interface WardrobeContextType {
   deleteItem: (id: number) => void;
   addOutfit: (outfit: Omit<Outfit, 'id'>) => number;
   addEvent: (event: Omit<PlannedEvent, 'id'>) => void;
+  updateEvent: (id: string, eventData: Partial<Omit<PlannedEvent, 'id'>>) => void;
+  deleteEvent: (id: string) => void;
   getItemById: (id: number) => ClosetItem | undefined;
   getOutfitById: (id: number) => Outfit | undefined;
   updateUserProfile: (profileData: Partial<UserProfile>) => void;
@@ -64,10 +66,20 @@ export const WardrobeProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const addEvent = (event: Omit<PlannedEvent, 'id'>) => {
-    setPlannedEvents((prevEvents) => {
-       const otherEvents = prevEvents.filter(e => e.date !== event.date);
-       return [...otherEvents, { ...event, id: Date.now().toString() }]
-    });
+    setPlannedEvents((prevEvents) => [
+      ...prevEvents,
+      { ...event, id: Date.now().toString() },
+    ]);
+  };
+
+  const updateEvent = (id: string, eventData: Partial<Omit<PlannedEvent, 'id'>>) => {
+    setPlannedEvents(prevEvents => prevEvents.map(event => 
+        event.id === id ? { ...event, ...eventData } : event
+    ));
+  };
+
+  const deleteEvent = (id: string) => {
+    setPlannedEvents(prevEvents => prevEvents.filter(event => event.id !== id));
   };
 
   const updateUserProfile = (profileData: Partial<UserProfile>) => {
@@ -78,7 +90,7 @@ export const WardrobeProvider = ({ children }: { children: ReactNode }) => {
   const getOutfitById = (id: number) => outfits.find(outfit => outfit.id === id);
 
   return (
-    <WardrobeContext.Provider value={{ closetItems, outfits, plannedEvents, userProfile, addItem, updateItem, deleteItem, addOutfit, addEvent, getItemById, getOutfitById, updateUserProfile }}>
+    <WardrobeContext.Provider value={{ closetItems, outfits, plannedEvents, userProfile, addItem, updateItem, deleteItem, addOutfit, addEvent, getItemById, getOutfitById, updateUserProfile, updateEvent, deleteEvent }}>
       {children}
     </WardrobeContext.Provider>
   );
