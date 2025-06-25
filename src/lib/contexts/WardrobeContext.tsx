@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 import type { ClosetItem, Outfit, PlannedEvent, UserProfile } from '../types';
 import { mockClosetItems } from '../mock-data';
 
@@ -36,61 +36,93 @@ export const WardrobeProvider = ({ children }: { children: ReactNode }) => {
   const [plannedEvents, setPlannedEvents] = useState<PlannedEvent[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>(initialUserProfile);
 
-  const addItem = (item: Omit<ClosetItem, 'id'>) => {
+  const addItem = useCallback((item: Omit<ClosetItem, 'id'>) => {
     setClosetItems((prevItems) => [
       ...prevItems,
       { ...item, id: Date.now() },
     ]);
-  };
+  }, []);
   
-  const updateItem = (id: number, itemData: Omit<ClosetItem, 'id' | 'imageUrl'> & { imageUrl?: string }) => {
+  const updateItem = useCallback((id: number, itemData: Omit<ClosetItem, 'id' | 'imageUrl'> & { imageUrl?: string }) => {
     setClosetItems((prevItems) => prevItems.map(item => {
       if (item.id === id) {
         return { ...item, ...itemData, imageUrl: itemData.imageUrl || item.imageUrl };
       }
       return item;
     }));
-  };
+  }, []);
 
-  const deleteItem = (id: number) => {
+  const deleteItem = useCallback((id: number) => {
     setClosetItems((prevItems) => prevItems.filter(item => item.id !== id));
-  };
+  }, []);
 
-  const addOutfit = (outfit: Omit<Outfit, 'id'>) => {
+  const addOutfit = useCallback((outfit: Omit<Outfit, 'id'>) => {
     const newId = Date.now();
     setOutfits((prevOutfits) => [
       ...prevOutfits,
       { ...outfit, id: newId },
     ]);
     return newId;
-  };
+  }, []);
   
-  const addEvent = (event: Omit<PlannedEvent, 'id'>) => {
+  const addEvent = useCallback((event: Omit<PlannedEvent, 'id'>) => {
     setPlannedEvents((prevEvents) => [
       ...prevEvents,
       { ...event, id: Date.now().toString() },
     ]);
-  };
+  }, []);
 
-  const updateEvent = (id: string, eventData: Partial<Omit<PlannedEvent, 'id'>>) => {
+  const updateEvent = useCallback((id: string, eventData: Partial<Omit<PlannedEvent, 'id'>>) => {
     setPlannedEvents(prevEvents => prevEvents.map(event => 
         event.id === id ? { ...event, ...eventData } : event
     ));
-  };
+  }, []);
 
-  const deleteEvent = (id: string) => {
+  const deleteEvent = useCallback((id: string) => {
     setPlannedEvents(prevEvents => prevEvents.filter(event => event.id !== id));
-  };
+  }, []);
 
-  const updateUserProfile = (profileData: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback((profileData: Partial<UserProfile>) => {
     setUserProfile(prevProfile => ({ ...prevProfile, ...profileData }));
-  };
+  }, []);
 
-  const getItemById = (id: number) => closetItems.find(item => item.id === id);
-  const getOutfitById = (id: number) => outfits.find(outfit => outfit.id === id);
+  const getItemById = useCallback((id: number) => closetItems.find(item => item.id === id), [closetItems]);
+  const getOutfitById = useCallback((id: number) => outfits.find(outfit => outfit.id === id), [outfits]);
+
+  const value = useMemo(() => ({
+    closetItems,
+    outfits,
+    plannedEvents,
+    userProfile,
+    addItem,
+    updateItem,
+    deleteItem,
+    addOutfit,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    getItemById,
+    getOutfitById,
+    updateUserProfile,
+  }), [
+    closetItems,
+    outfits,
+    plannedEvents,
+    userProfile,
+    addItem,
+    updateItem,
+    deleteItem,
+    addOutfit,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    getItemById,
+    getOutfitById,
+    updateUserProfile,
+  ]);
 
   return (
-    <WardrobeContext.Provider value={{ closetItems, outfits, plannedEvents, userProfile, addItem, updateItem, deleteItem, addOutfit, addEvent, getItemById, getOutfitById, updateUserProfile, updateEvent, deleteEvent }}>
+    <WardrobeContext.Provider value={value}>
       {children}
     </WardrobeContext.Provider>
   );
