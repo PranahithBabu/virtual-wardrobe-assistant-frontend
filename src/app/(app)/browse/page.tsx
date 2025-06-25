@@ -73,8 +73,13 @@ export default function BrowsePage() {
   }, [closetItems, filters]);
   
   const availableCategories = useMemo(() => {
-    return ['all', ...Array.from(new Set(closetItems.map(item => item.category)))];
-  }, [closetItems]);
+    const items = closetItems.filter(item => {
+      const colorMatch = filters.color === 'all' || item.color === filters.color;
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
+      return colorMatch && seasonMatch;
+    });
+    return ['all', ...Array.from(new Set(items.map(item => item.category)))];
+  }, [closetItems, filters.color, filters.season]);
 
   const availableColors = useMemo(() => {
     const items = closetItems.filter(item => {
@@ -161,13 +166,13 @@ export default function BrowsePage() {
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
-        <DialogContent className="sm:max-w-[425px] rounded-2xl">
+        <DialogContent className="sm:max-w-[425px] rounded-2xl max-h-[90dvh] p-0">
           {selectedItem && (
             <>
-            <DialogHeader>
+            <DialogHeader className="p-4 sm:p-6 pb-4">
                 <DialogTitle className="text-2xl font-headline">{selectedItem.name}</DialogTitle>
             </DialogHeader>
-            <div className="mt-4 space-y-4">
+            <div className="flex-grow overflow-y-auto px-4 sm:px-6 space-y-4">
                 <div className="aspect-[3/4] relative w-full rounded-lg overflow-hidden">
                     <Image src={selectedItem.imageUrl} alt={selectedItem.name} fill className="object-cover" />
                 </div>
@@ -182,7 +187,7 @@ export default function BrowsePage() {
                   </p>
                 )}
             </div>
-            <DialogFooter className="sm:justify-between gap-2 mt-4">
+            <DialogFooter className="sm:justify-between gap-2 mt-auto p-4 sm:p-6 pt-4 border-t">
                <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" className="w-full sm:w-auto">Delete</Button>

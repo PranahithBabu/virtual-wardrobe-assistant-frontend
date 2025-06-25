@@ -50,7 +50,6 @@ export default function CalendarPage() {
       e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
     );
     
-    // Reset states for the dialog
     setCurrentSuggestion(null);
     setSuggestedOutfitId(null);
     setOccasion('');
@@ -61,7 +60,7 @@ export default function CalendarPage() {
         setOccasion(existingEvent.occasion);
         const outfit = getOutfitById(existingEvent.outfitId);
         if (outfit) {
-            if (outfit.reasoning) { // It was a suggestion
+            if (outfit.reasoning) {
                 setPlanType('suggest');
                 setSuggestedOutfitId(outfit.id);
                 setCurrentSuggestion({
@@ -69,7 +68,7 @@ export default function CalendarPage() {
                     occasion: existingEvent.occasion,
                     reasoning: outfit.reasoning,
                 });
-            } else { // It was a manual entry
+            } else {
                 setPlanType('manual');
                 setManualOutfitName(outfit.name);
             }
@@ -96,7 +95,7 @@ export default function CalendarPage() {
         
         const newOutfit: Omit<Outfit, 'id'> = {
           name: newOutfitSuggestion.outfit,
-          items: [], // In a real app, you'd parse items from the suggestion
+          items: [], 
           reasoning: newOutfitSuggestion.reasoning,
         };
         const newOutfitId = addOutfit(newOutfit);
@@ -123,7 +122,7 @@ export default function CalendarPage() {
         outfitId_to_add = addOutfit(newOutfit);
         if (!occasion_to_add) occasion_to_add = "General";
 
-    } else { // suggest
+    } else { 
         if (!suggestedOutfitId || !currentSuggestion) {
             toast({ variant: "destructive", title: "Please generate an outfit first."});
             return;
@@ -153,11 +152,11 @@ export default function CalendarPage() {
     return (
         <Card className="rounded-2xl shadow-soft border-0 mt-6 lg:mt-0">
             <CardHeader>
-                <CardTitle className="font-headline">{format(date, 'MMMM d, yyyy')}</CardTitle>
+                <CardTitle className="font-headline text-lg sm:text-xl">{format(date, 'MMMM d, yyyy')}</CardTitle>
                 <p className='text-sm text-muted-foreground'>Occasion: {event.occasion}</p>
             </CardHeader>
             <CardContent>
-                <p className="font-semibold mb-2">{cardTitle}</p>
+                <p className="font-semibold mb-2 text-base">{cardTitle}</p>
                 <OutfitCard suggestion={{ outfit: outfit.name, occasion: event.occasion, reasoning: outfit.reasoning || ''}}/>
             </CardContent>
         </Card>
@@ -169,7 +168,7 @@ export default function CalendarPage() {
       <AppHeader title="Calendar Planner" />
       <div className="flex-grow p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2">
-            <Card className="p-0 sm:p-4 rounded-2xl shadow-soft border-0">
+            <Card className="p-0 sm:p-2 md:p-4 rounded-2xl shadow-soft border-0">
                 <Calendar
                     mode="single"
                     selected={date}
@@ -194,49 +193,51 @@ export default function CalendarPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
+        <DialogContent className="rounded-2xl max-h-[90dvh] p-0">
+          <DialogHeader className="p-4 sm:p-6 pb-4">
             <DialogTitle>Plan for {date ? format(date, 'MMMM d, yyyy') : ''}</DialogTitle>
             <DialogDescription>
               Suggest an outfit with AI or manually enter one.
             </DialogDescription>
           </DialogHeader>
-          <Tabs value={planType} onValueChange={setPlanType} className="w-full pt-4">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="suggest">Suggest Outfit</TabsTrigger>
-                <TabsTrigger value="manual">Enter Manually</TabsTrigger>
-            </TabsList>
-            <TabsContent value="suggest" className="space-y-4 py-4">
-                <Input
-                placeholder="e.g., Casual brunch, Work meeting"
-                value={occasion}
-                onChange={(e) => setOccasion(e.target.value)}
-                />
-                <Button onClick={handleGetSuggestion} disabled={isPending} className="w-full">
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isPending ? 'Getting suggestion...' : 'Suggest Outfit'}
-                </Button>
-                {currentSuggestion && (
-                <div className="pt-4">
-                    <p className="font-semibold mb-2 text-sm">Suggested:</p>
-                    <OutfitCard suggestion={currentSuggestion} />
-                </div>
-                )}
-            </TabsContent>
-            <TabsContent value="manual" className="space-y-4 py-4">
-                <Input
-                    placeholder="Occasion (optional, e.g., Work meeting)"
+          <div className="flex-grow overflow-y-auto px-4 sm:px-6">
+            <Tabs value={planType} onValueChange={setPlanType} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="suggest">Suggest Outfit</TabsTrigger>
+                    <TabsTrigger value="manual">Enter Manually</TabsTrigger>
+                </TabsList>
+                <TabsContent value="suggest" className="space-y-4 py-4">
+                    <Input
+                    placeholder="e.g., Casual brunch, Work meeting"
                     value={occasion}
                     onChange={(e) => setOccasion(e.target.value)}
-                />
-                <Input
-                    placeholder="Enter outfit name (e.g., Blue Jeans & White Tee)"
-                    value={manualOutfitName}
-                    onChange={(e) => setManualOutfitName(e.target.value)}
-                />
-            </TabsContent>
-          </Tabs>
-          <DialogFooter>
+                    />
+                    <Button onClick={handleGetSuggestion} disabled={isPending} className="w-full">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isPending ? 'Getting suggestion...' : 'Suggest Outfit'}
+                    </Button>
+                    {currentSuggestion && (
+                    <div className="pt-4">
+                        <p className="font-semibold mb-2 text-sm">Suggested:</p>
+                        <OutfitCard suggestion={currentSuggestion} />
+                    </div>
+                    )}
+                </TabsContent>
+                <TabsContent value="manual" className="space-y-4 py-4">
+                    <Input
+                        placeholder="Occasion (optional, e.g., Work meeting)"
+                        value={occasion}
+                        onChange={(e) => setOccasion(e.target.value)}
+                    />
+                    <Input
+                        placeholder="Enter outfit name (e.g., Blue Jeans & White Tee)"
+                        value={manualOutfitName}
+                        onChange={(e) => setManualOutfitName(e.target.value)}
+                    />
+                </TabsContent>
+            </Tabs>
+          </div>
+          <DialogFooter className="p-4 sm:p-6 pt-4 border-t mt-auto">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleAddToCalendar} disabled={(planType === 'suggest' && !suggestedOutfitId) || (planType === 'manual' && !manualOutfitName)}>Add to Calendar</Button>
           </DialogFooter>
