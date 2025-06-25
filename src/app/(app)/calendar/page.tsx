@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect } from 'react';
-import { format, parse, startOfDay } from 'date-fns';
+import { format, parse, startOfDay, parseISO } from 'date-fns';
 import { Sparkles, Edit, Trash2 } from 'lucide-react';
 
 import { useWardrobe } from '@/lib/contexts/WardrobeContext';
@@ -42,7 +42,8 @@ type OutfitSuggestion = GenerateOutfitSuggestionsOutput['outfitSuggestions'][0];
 
 export default function CalendarPage() {
   const { 
-    closetItems, 
+    closetItems,
+    userProfile,
     plannedEvents, 
     addEvent, 
     updateEvent,
@@ -66,7 +67,6 @@ export default function CalendarPage() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  // Effect to reset the form when opening for a NEW event
   useEffect(() => {
     if (isDialogOpen && !selectedEvent) {
       setOccasion('');
@@ -76,6 +76,28 @@ export default function CalendarPage() {
       setPlanType('suggest');
     }
   }, [isDialogOpen, selectedEvent]);
+  
+   useEffect(() => {
+    if (isDialogOpen && selectedEvent) {
+        const outfit = getOutfitById(selectedEvent.outfitId);
+        setOccasion(selectedEvent.occasion);
+        if (outfit) {
+            if (outfit.reasoning) { // AI-suggested outfit
+                setPlanType('suggest');
+                setCurrentSuggestion({
+                    outfit: outfit.name,
+                    occasion: selectedEvent.occasion,
+                    reasoning: outfit.reasoning,
+                    itemIds: outfit.itemIds,
+                });
+                setSuggestedOutfitId(outfit.id);
+            } else { // Manually entered outfit
+                setPlanType('manual');
+                setManualOutfitName(outfit.name);
+            }
+        }
+    }
+  }, [isDialogOpen, selectedEvent, getOutfitById]);
 
   const handleDayClick = (day: Date, modifiers: DayModifiers) => {
     if (modifiers.disabled) return;
@@ -89,25 +111,6 @@ export default function CalendarPage() {
 
   const handleOpenDialogForEdit = (event: PlannedEvent) => {
     setSelectedEvent(event);
-    const outfit = getOutfitById(event.outfitId);
-    setOccasion(event.occasion);
-    if (outfit) {
-      if (outfit.reasoning) { // AI-suggested outfit
-        setPlanType('suggest');
-        setManualOutfitName('');
-        setCurrentSuggestion({
-          outfit: outfit.name,
-          occasion: event.occasion,
-          reasoning: outfit.reasoning,
-        });
-        setSuggestedOutfitId(outfit.id);
-      } else { // Manually entered outfit
-        setPlanType('manual');
-        setManualOutfitName(outfit.name);
-        setCurrentSuggestion(null);
-        setSuggestedOutfitId(null);
-      }
-    }
     setDialogOpen(true);
   };
 
@@ -129,9 +132,12 @@ export default function CalendarPage() {
         return;
     }
     startTransition(async () => {
-      const wardrobeDescription = closetItems.map((item) => item.name).join(', ');
       try {
-        const result = await getOutfitSuggestionsAction({ wardrobeDescription, occasion });
+        const result = await getOutfitSuggestionsAction({ 
+            closetItems, 
+            occasion,
+            userPreferences: userProfile.stylePreferences,
+        });
         const newOutfitSuggestion = result.outfitSuggestions[0];
         if (!newOutfitSuggestion) {
            toast({ variant: "destructive", title: "Could not get a suggestion." });
@@ -140,7 +146,7 @@ export default function CalendarPage() {
         
         const newOutfit: Omit<Outfit, 'id'> = {
           name: newOutfitSuggestion.outfit,
-          items: [], 
+          itemIds: newOutfitSuggestion.itemIds, 
           reasoning: newOutfitSuggestion.reasoning,
         };
         const newOutfitId = addOutfit(newOutfit);
@@ -163,7 +169,7 @@ export default function CalendarPage() {
             toast({ variant: "destructive", title: "Please enter an outfit name."});
             return;
         }
-        const newOutfit: Omit<Outfit, 'id'> = { name: manualOutfitName, items: [] };
+        const newOutfit: Omit<Outfit, 'id'> = { name: manualOutfitName, itemIds: [] };
         outfitId_to_add = addOutfit(newOutfit);
         if (!occasion_to_add) occasion_to_add = "General";
 
@@ -282,9 +288,9 @@ export default function CalendarPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl flex flex-col max-h-[90dvh]">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader className="p-4 sm:p-6 pb-2">
-            <DialogTitle className="text-lg sm:text-xl">{selectedEvent ? 'Edit Plan' : 'Plan an Outfit'}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl font-headline">{selectedEvent ? 'Edit Plan' : 'Plan an Outfit'}</DialogTitle>
             <DialogDescription>
               For {date ? format(date, 'MMMM d, yyyy') : ''}
             </DialogDescription>

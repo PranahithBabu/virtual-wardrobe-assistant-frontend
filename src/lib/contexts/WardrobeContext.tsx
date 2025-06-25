@@ -17,7 +17,7 @@ interface WardrobeContextType {
   plannedEvents: PlannedEvent[];
   userProfile: UserProfile;
   addItem: (item: Omit<ClosetItem, 'id'>) => void;
-  updateItem: (id: number, itemData: Omit<ClosetItem, 'id' | 'imageUrl'> & { imageUrl?: string }) => void;
+  updateItem: (id: number, itemData: Partial<Omit<ClosetItem, 'id' | 'imageUrl'>> & { imageUrl?: string }) => void;
   deleteItem: (id: number) => void;
   addOutfit: (outfit: Omit<Outfit, 'id'>) => number;
   addEvent: (event: Omit<PlannedEvent, 'id'>) => void;
@@ -43,7 +43,7 @@ export const WardrobeProvider = ({ children }: { children: ReactNode }) => {
     ]);
   }, []);
   
-  const updateItem = useCallback((id: number, itemData: Omit<ClosetItem, 'id' | 'imageUrl'> & { imageUrl?: string }) => {
+  const updateItem = useCallback((id: number, itemData: Partial<Omit<ClosetItem, 'id' | 'imageUrl'>> & { imageUrl?: string }) => {
     setClosetItems((prevItems) => prevItems.map(item => {
       if (item.id === id) {
         return { ...item, ...itemData, imageUrl: itemData.imageUrl || item.imageUrl };
@@ -70,17 +70,86 @@ export const WardrobeProvider = ({ children }: { children: ReactNode }) => {
       ...prevEvents,
       { ...event, id: Date.now().toString() },
     ]);
+    
+    // Use a functional update with setOutfits to get the most recent state
+    setOutfits(currentOutfits => {
+      const outfit = currentOutfits.find(o => o.id === event.outfitId);
+      if (outfit && outfit.itemIds.length > 0) {
+        setClosetItems(prevItems =>
+          prevItems.map(item => {
+            if (outfit.itemIds.includes(item.id)) {
+              return { ...item, previousLastWorn: item.lastWorn, lastWorn: event.date };
+            }
+            return item;
+          })
+        );
+      }
+      return currentOutfits; // No change to outfits, just using it to read data
+    });
   }, []);
 
   const updateEvent = useCallback((id: string, eventData: Partial<Omit<PlannedEvent, 'id'>>) => {
+    const oldEvent = plannedEvents.find(e => e.id === id);
+    if (!oldEvent) return;
+
+    setOutfits(currentOutfits => {
+      const oldOutfit = currentOutfits.find(o => o.id === oldEvent.outfitId);
+      const newOutfitId = eventData.outfitId ?? oldEvent.outfitId;
+      const newOutfit = currentOutfits.find(o => o.id === newOutfitId);
+      const newDate = eventData.date ?? oldEvent.date;
+
+      setClosetItems(prevItems => prevItems.map(item => {
+        const wasInOldOutfit = oldOutfit?.itemIds.includes(item.id) && item.lastWorn === oldEvent.date;
+        const isInNewOutfit = newOutfit?.itemIds.includes(item.id);
+
+        if (wasInOldOutfit && isInNewOutfit && oldEvent.date === newDate) {
+          return item; // Item remains in the same event, no change needed
+        }
+        
+        let updatedItem = { ...item };
+
+        if (wasInOldOutfit) {
+          // Revert item from old event
+          updatedItem = { ...updatedItem, lastWorn: item.previousLastWorn, previousLastWorn: undefined };
+        }
+        
+        if (isInNewOutfit) {
+          // Apply item to new event
+          const originalLastWorn = wasInOldOutfit ? updatedItem.lastWorn : item.lastWorn;
+          updatedItem = { ...updatedItem, previousLastWorn: originalLastWorn, lastWorn: newDate };
+        }
+        
+        return updatedItem;
+      }));
+      return currentOutfits;
+    });
+
     setPlannedEvents(prevEvents => prevEvents.map(event => 
         event.id === id ? { ...event, ...eventData } : event
     ));
-  }, []);
+  }, [plannedEvents]);
 
   const deleteEvent = useCallback((id: string) => {
+    const eventToDelete = plannedEvents.find(e => e.id === id);
+    if (!eventToDelete) return;
+
+    setOutfits(currentOutfits => {
+      const outfit = currentOutfits.find(o => o.id === eventToDelete.outfitId);
+      if (outfit && outfit.itemIds.length > 0) {
+        setClosetItems(prevItems =>
+          prevItems.map(item => {
+            if (outfit.itemIds.includes(item.id) && item.lastWorn === eventToDelete.date) {
+              return { ...item, lastWorn: item.previousLastWorn, previousLastWorn: undefined };
+            }
+            return item;
+          })
+        );
+      }
+      return currentOutfits;
+    });
+
     setPlannedEvents(prevEvents => prevEvents.filter(event => event.id !== id));
-  }, []);
+  }, [plannedEvents]);
 
   const updateUserProfile = useCallback((profileData: Partial<UserProfile>) => {
     setUserProfile(prevProfile => ({ ...prevProfile, ...profileData }));

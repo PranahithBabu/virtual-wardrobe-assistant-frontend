@@ -8,20 +8,21 @@ export interface ClosetItem {
   color: string;
   season: ItemSeason[];
   imageUrl: string;
-  lastWorn?: string;
+  lastWorn?: string; // 'YYYY-MM-DD'
+  previousLastWorn?: string; // For rollback
   dataAiHint?: string;
 }
 
 export interface Outfit {
   id: number;
   name: string;
-  items: ClosetItem[];
+  itemIds: number[];
   reasoning?: string;
 }
 
 export interface PlannedEvent {
   id: string;
-  date: string;
+  date: string; // 'YYYY-MM-DD'
   occasion: string;
   outfitId: number;
 }

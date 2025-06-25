@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SuggestionsPage() {
-  const { closetItems } = useWardrobe();
+  const { closetItems, userProfile } = useWardrobe();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [suggestions, setSuggestions] = useState<GenerateOutfitSuggestionsOutput | null>(null);
@@ -31,11 +31,10 @@ export default function SuggestionsPage() {
       }
 
       try {
-        const wardrobeDescription = closetItems
-          .map((item) => `${item.name} (${item.category}, ${item.color}, for ${item.season.join('/')})`)
-          .join(', ');
-
-        const result = await getOutfitSuggestionsAction({ wardrobeDescription });
+        const result = await getOutfitSuggestionsAction({ 
+          closetItems: closetItems,
+          userPreferences: userProfile.stylePreferences,
+        });
         setSuggestions(result);
       } catch (error) {
         toast({

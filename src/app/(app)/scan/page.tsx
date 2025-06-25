@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, CalendarIcon } from 'lucide-react';
 import Image from 'next/image';
+import { format, parseISO } from 'date-fns';
+
 import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 import AppHeader from '@/components/app/AppHeader';
 import { Button } from '@/components/ui/button';
@@ -28,9 +30,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { ItemCategory, ItemSeason } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const categories: ItemCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
 const seasons: ItemSeason[] = ['Spring', 'Summer', 'Autumn', 'Winter', 'All'];
@@ -43,6 +48,7 @@ const formSchema = z.object({
     message: 'You have to select at least one season.',
   }),
   image: z.any().refine((files) => files?.length > 0 || typeof files === 'string', 'Image is required.'),
+  lastWorn: z.date().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -65,6 +71,7 @@ export default function ScanPage() {
       color: '',
       seasons: [],
       image: undefined,
+      lastWorn: undefined,
     },
   });
 
@@ -75,13 +82,16 @@ export default function ScanPage() {
         category: itemToEdit.category,
         color: itemToEdit.color,
         seasons: itemToEdit.season,
-        image: itemToEdit.imageUrl, // We use this to satisfy validation, won't be submitted
+        image: itemToEdit.imageUrl,
+        lastWorn: itemToEdit.lastWorn ? parseISO(itemToEdit.lastWorn) : undefined,
       });
       setPreview(itemToEdit.imageUrl);
     }
   }, [isEditMode, itemToEdit, form]);
 
   const onSubmit = (data: FormData) => {
+    const lastWornDate = data.lastWorn ? format(data.lastWorn, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+    
     if (isEditMode && itemToEdit) {
         const { image, ...updateData } = data;
         const newImageData = image instanceof FileList ? URL.createObjectURL(image[0]) : undefined;
@@ -89,6 +99,7 @@ export default function ScanPage() {
         updateItem(itemToEdit.id, {
             ...updateData,
             season: data.seasons as ItemSeason[],
+            lastWorn: lastWornDate,
             ...(newImageData && { imageUrl: newImageData })
         });
 
@@ -103,6 +114,7 @@ export default function ScanPage() {
             color: data.color,
             season: data.seasons as ItemSeason[],
             imageUrl: URL.createObjectURL(data.image[0]),
+            lastWorn: lastWornDate,
         });
         toast({
             title: "Item Added!",
@@ -270,6 +282,50 @@ export default function ScanPage() {
                         <FormMessage />
                         </FormItem>
                     )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="lastWorn"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Last Worn</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Optional. This helps us suggest outfits you haven't worn in a while. Defaults to today if left blank.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
