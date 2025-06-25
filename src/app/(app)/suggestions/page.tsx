@@ -55,9 +55,9 @@ export default function SuggestionsPage() {
           {isPending ? 'Generating...' : 'Surprise Me'}
         </Button>
       </AppHeader>
-      <div className="flex-grow p-4 md:p-6 lg:p-8">
+      <div className="flex-grow p-4 sm:p-6">
         {!suggestions && !isPending && (
-          <div className="flex flex-col items-center justify-center h-full rounded-lg border-2 border-dashed border-muted-foreground/30 text-center p-8">
+          <div className="flex flex-col items-center justify-center h-full rounded-lg border-2 border-dashed border-muted-foreground/30 text-center p-4 sm:p-8">
              <div className="bg-primary/10 rounded-full p-4 mb-4">
                 <Sparkles className="h-10 w-10 text-primary" />
              </div>
@@ -74,6 +74,13 @@ export default function SuggestionsPage() {
         )}
         {suggestions && (
           <div className="space-y-4">
+            {suggestions.overallReasoning && (
+                <Card className="rounded-2xl shadow-soft border-0 bg-primary/10">
+                    <CardContent className="p-4">
+                        <p className="text-primary-foreground/90 font-medium text-center">{suggestions.overallReasoning}</p>
+                    </CardContent>
+                </Card>
+            )}
             {suggestions.outfitSuggestions.map((suggestion, index) => (
                 <OutfitCard key={index} suggestion={suggestion} />
             ))}

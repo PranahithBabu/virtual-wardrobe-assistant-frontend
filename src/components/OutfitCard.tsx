@@ -14,7 +14,7 @@ interface OutfitCardProps {
 const OutfitCard = ({ suggestion }: OutfitCardProps) => {
   return (
     <Card className="rounded-2xl shadow-soft border-0">
-      <CardContent className="p-6 flex items-start gap-4">
+      <CardContent className="p-4 flex items-start gap-3">
         <div className="bg-primary/10 p-3 rounded-lg mt-1">
             <Shirt className="h-6 w-6 text-primary" />
         </div>

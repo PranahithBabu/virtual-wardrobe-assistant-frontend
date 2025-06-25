@@ -51,18 +51,10 @@ export default function BrowsePage() {
   const [filters, setFilters] = useState(initialFilters);
   const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
 
-  const handleCategoryChange = (value: string) => {
-    setFilters(prev => ({ ...prev, category: value }));
-  };
-  
-  const handleColorChange = (value: string) => {
-    setFilters(prev => ({ ...prev, color: value }));
+  const handleFilterChange = (filterType: keyof typeof initialFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
   };
 
-  const handleSeasonChange = (value: string) => {
-    setFilters(prev => ({ ...prev, season: value }));
-  };
-  
   const handleResetFilters = () => {
     setFilters(initialFilters);
   };
@@ -81,13 +73,8 @@ export default function BrowsePage() {
   }, [closetItems, filters]);
   
   const availableCategories = useMemo(() => {
-    const items = closetItems.filter(item => {
-      const colorMatch = filters.color === 'all' || item.color === filters.color;
-      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
-      return colorMatch && seasonMatch;
-    });
-    return ['all', ...Array.from(new Set(items.map(item => item.category)))];
-  }, [closetItems, filters.color, filters.season]);
+    return ['all', ...Array.from(new Set(closetItems.map(item => item.category)))];
+  }, [closetItems]);
 
   const availableColors = useMemo(() => {
     const items = closetItems.filter(item => {
@@ -120,10 +107,10 @@ export default function BrowsePage() {
   return (
     <div className="flex flex-col h-full">
       <AppHeader title="Browse Your Closet" />
-      <div className="p-4 md:p-6 lg:p-8">
+      <div className="flex-grow p-4 sm:p-6">
         <Card className="p-4 mb-6 rounded-2xl shadow-soft border-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <Select onValueChange={handleCategoryChange} value={filters.category}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Select onValueChange={(value) => handleFilterChange('category', value)} value={filters.category}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
@@ -134,7 +121,7 @@ export default function BrowsePage() {
               </SelectContent>
             </Select>
 
-            <Select onValueChange={handleColorChange} value={filters.color}>
+            <Select onValueChange={(value) => handleFilterChange('color', value)} value={filters.color}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by color" />
               </SelectTrigger>
@@ -143,7 +130,7 @@ export default function BrowsePage() {
               </SelectContent>
             </Select>
 
-            <Select onValueChange={handleSeasonChange} value={filters.season}>
+            <Select onValueChange={(value) => handleFilterChange('season', value)} value={filters.season}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by season" />
               </SelectTrigger>
@@ -166,7 +153,7 @@ export default function BrowsePage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-96 rounded-lg border-2 border-dashed border-muted-foreground/30 text-center">
+          <div className="flex flex-col items-center justify-center p-4 min-h-[50vh] rounded-lg border-2 border-dashed border-muted-foreground/30 text-center">
              <h2 className="text-2xl font-semibold tracking-tight font-headline">No Items Found</h2>
              <p className="text-muted-foreground mt-2">Try adjusting your filters or adding more items.</p>
           </div>

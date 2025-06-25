@@ -151,7 +151,7 @@ export default function CalendarPage() {
     const cardTitle = outfit.reasoning ? 'AI-Suggested Outfit' : 'Manually Planned Outfit';
 
     return (
-        <Card className="rounded-2xl shadow-soft border-0 mt-6">
+        <Card className="rounded-2xl shadow-soft border-0 mt-6 lg:mt-0">
             <CardHeader>
                 <CardTitle className="font-headline">{format(date, 'MMMM d, yyyy')}</CardTitle>
                 <p className='text-sm text-muted-foreground'>Occasion: {event.occasion}</p>
@@ -167,7 +167,7 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col h-full">
       <AppHeader title="Calendar Planner" />
-      <div className="flex-grow p-4 md:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="flex-grow p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2">
             <Card className="p-0 sm:p-4 rounded-2xl shadow-soft border-0">
                 <Calendar
