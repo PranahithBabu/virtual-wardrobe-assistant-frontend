@@ -166,47 +166,54 @@ export default function BrowsePage() {
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={(isOpen) => !isOpen && setSelectedItem(null)}>
-        <DialogContent className="sm:max-w-[425px] rounded-2xl max-h-[90dvh] p-0">
+        <DialogContent className="sm:max-w-md md:max-w-2xl rounded-2xl max-h-[90vh] p-0 flex-col md:flex-row md:items-start gap-0">
           {selectedItem && (
             <>
-            <DialogHeader className="p-4 sm:p-6 pb-4">
-                <DialogTitle className="text-2xl font-headline">{selectedItem.name}</DialogTitle>
-            </DialogHeader>
-            <div className="flex-grow overflow-y-auto px-4 sm:px-6 space-y-4">
-                <div className="aspect-[3/4] relative w-full rounded-lg overflow-hidden">
-                    <Image src={selectedItem.imageUrl} alt={selectedItem.name} fill className="object-cover" />
-                </div>
-                <div className="flex flex-wrap gap-2">
+              <div className="relative w-full aspect-square md:w-1/2 md:h-full md:aspect-auto">
+                <Image
+                  src={selectedItem.imageUrl}
+                  alt={selectedItem.name}
+                  fill
+                  className="object-cover md:rounded-l-2xl"
+                />
+              </div>
+              <div className="flex flex-col flex-1 max-h-full">
+                <DialogHeader className="p-4 sm:p-6 pb-4 flex-shrink-0">
+                  <DialogTitle className="text-2xl font-headline">{selectedItem.name}</DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow overflow-y-auto px-4 sm:px-6 space-y-4">
+                  <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">{selectedItem.category}</Badge>
                     <Badge variant="secondary">{selectedItem.color}</Badge>
                     {selectedItem.season.map(s => <Badge key={s} variant="secondary">{s}</Badge>)}
+                  </div>
+                  {selectedItem.lastWorn && (
+                    <p className="text-sm text-muted-foreground">
+                      Last worn on {format(parseISO(selectedItem.lastWorn), 'MMMM d, yyyy')}
+                    </p>
+                  )}
                 </div>
-                {selectedItem.lastWorn && (
-                  <p className="text-sm text-muted-foreground">
-                    Last worn on {format(parseISO(selectedItem.lastWorn), 'MMMM d, yyyy')}
-                  </p>
-                )}
-            </div>
-            <DialogFooter className="sm:justify-between gap-2 mt-auto p-4 sm:p-6 pt-4 border-t">
-               <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="w-full sm:w-auto">Delete</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete "{selectedItem.name}".
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/scan?edit=${selectedItem.id}`)}>Edit</Button>
-            </DialogFooter>
+                <DialogFooter className="sm:justify-between gap-2 mt-auto p-4 sm:p-6 border-t flex-shrink-0">
+                   <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="w-full sm:w-auto">Delete</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete "{selectedItem.name}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/scan?edit=${selectedItem.id}`)}>Edit</Button>
+                </DialogFooter>
+              </div>
             </>
           )}
         </DialogContent>

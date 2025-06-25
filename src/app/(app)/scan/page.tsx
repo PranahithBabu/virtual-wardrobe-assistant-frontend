@@ -59,6 +59,7 @@ export default function ScanPage() {
   const { addItem, getItemById, updateItem } = useWardrobe();
   const { toast } = useToast();
   const [preview, setPreview] = useState<string | null>(null);
+  const [isLastWornPickerOpen, setLastWornPickerOpen] = useState(false);
   
   const itemId = searchParams.get('edit');
   const isEditMode = !!itemId;
@@ -289,7 +290,7 @@ export default function ScanPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Last Worn</FormLabel>
-                      <Popover>
+                      <Popover open={isLastWornPickerOpen} onOpenChange={setLastWornPickerOpen}>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
@@ -312,7 +313,10 @@ export default function ScanPage() {
                           <Calendar
                             mode="single"
                             selected={field.value}
-                            onSelect={field.onChange}
+                            onSelect={(date) => {
+                                field.onChange(date);
+                                setLastWornPickerOpen(false);
+                            }}
                             disabled={(date) =>
                               date > new Date() || date < new Date("1900-01-01")
                             }
