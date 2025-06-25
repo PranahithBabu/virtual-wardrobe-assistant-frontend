@@ -31,10 +31,12 @@ import {
 import Logo from '@/components/Logo';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
+import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 
 const AppSidebar = () => {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { userProfile } = useWardrobe();
 
   const menuItems = [
     { href: '/closet', label: 'My Closet', icon: Home },
@@ -77,10 +79,10 @@ const AppSidebar = () => {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[state=collapsed]:w-auto group-data-[state=collapsed]:h-auto group-data-[state=collapsed]:aspect-square group-data-[state=collapsed]:hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
-                        <AvatarFallback>U</AvatarFallback>
+                        <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
+                        <AvatarFallback>{userProfile.name?.[0].toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <span className="group-data-[state=collapsed]:hidden">User</span>
+                    <span className="group-data-[state=collapsed]:hidden">{userProfile.name}</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side={isMobile ? 'top' : 'right'} align="end" className="w-56">

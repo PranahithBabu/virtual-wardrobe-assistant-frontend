@@ -25,3 +25,10 @@ export interface PlannedEvent {
   occasion: string;
   outfitId: number;
 }
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  avatarUrl: string;
+  stylePreferences?: string;
+}
