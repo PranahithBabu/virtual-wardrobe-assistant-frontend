@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 
 import AppHeader from '@/components/app/AppHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,8 +16,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useWardrobe } from '@/lib/contexts/WardrobeContext';
 import { useToast } from '@/hooks/use-toast';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Upload } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const CategoryChart = dynamic(() => import('@/components/app/CategoryChart'), {
+  ssr: false,
+  loading: () => (
+      <Card className="lg:col-span-2 rounded-2xl shadow-soft border-0">
+          <CardHeader>
+              <CardTitle className="font-headline">Items by Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+              <div className="h-56 sm:h-64 w-full">
+                <Skeleton className="h-full w-full" />
+              </div>
+          </CardContent>
+      </Card>
+  )
+});
+
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -29,7 +47,7 @@ type ProfileFormData = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
   const { closetItems, userProfile, updateUserProfile } = useWardrobe();
   const { toast } = useToast();
-  const [preview, setPreview] = useState<string | null>(userProfile.avatarUrl);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -44,7 +62,7 @@ export default function ProfilePage() {
     if (userProfile) {
       form.reset({
         name: userProfile.name,
-        stylePreferences: userProfile.stylePreferences,
+        stylePreferences: userProfile.stylePreferences || '',
         avatar: userProfile.avatarUrl,
       });
       setPreview(userProfile.avatarUrl);
@@ -185,31 +203,7 @@ export default function ProfilePage() {
                     </div>
                 </CardContent>
             </Card>
-
-            <Card className="lg:col-span-2 rounded-2xl shadow-soft border-0">
-                <CardHeader>
-                    <CardTitle className="font-headline">Items by Category</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-56 sm:h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={stats.categoryCount} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "hsl(var(--background))",
-                                    border: "1px solid hsl(var(--border))",
-                                    borderRadius: "var(--radius)",
-                                }}
-                            />
-                            <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </CardContent>
-            </Card>
+            <CategoryChart data={stats.categoryCount} />
         </div>
       </div>
     </div>
