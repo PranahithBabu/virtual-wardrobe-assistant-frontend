@@ -1,26 +1,23 @@
-'use client';
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Upload, X, CalendarIcon } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Upload, X, CalendarIcon } from 'lucide-react';
-import Image from 'next/image';
-import { format, parseISO } from 'date-fns';
-
-import { useWardrobe } from '@/lib/contexts/WardrobeContext';
-import AppHeader from '@/components/app/AppHeader';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import AppHeader from '@/components/app/AppHeader'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -29,16 +26,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import type { ItemCategory, ItemSeason } from '@/lib/types';
-import { cn } from '@/lib/utils';
+} from '@/components/ui/form'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
-const categories: ItemCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
-const seasons: ItemSeason[] = ['Spring', 'Summer', 'Autumn', 'Winter', 'All'];
+const categories = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories']
+const seasons = ['Spring', 'Summer', 'Autumn', 'Winter', 'All']
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -49,23 +45,21 @@ const formSchema = z.object({
   }),
   image: z.any().refine((files) => files?.length > 0 || typeof files === 'string', 'Image is required.'),
   lastWorn: z.date().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+})
 
 export default function ScanPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { addItem, getItemById, updateItem } = useWardrobe();
-  const { toast } = useToast();
-  const [preview, setPreview] = useState<string | null>(null);
-  const [isLastWornPickerOpen, setLastWornPickerOpen] = useState(false);
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { addItem, getItemById, updateItem } = useWardrobe()
+  const { toast } = useToast()
+  const [preview, setPreview] = useState(null)
+  const [isLastWornPickerOpen, setLastWornPickerOpen] = useState(false)
   
-  const itemId = searchParams.get('edit');
-  const isEditMode = !!itemId;
-  const itemToEdit = isEditMode ? getItemById(Number(itemId)) : null;
+  const itemId = searchParams.get('edit')
+  const isEditMode = !!itemId
+  const itemToEdit = isEditMode ? getItemById(Number(itemId)) : null
 
-  const form = useForm<FormData>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -74,7 +68,7 @@ export default function ScanPage() {
       image: undefined,
       lastWorn: undefined,
     },
-  });
+  })
 
   useEffect(() => {
     if (isEditMode && itemToEdit) {
@@ -85,57 +79,57 @@ export default function ScanPage() {
         seasons: itemToEdit.season,
         image: itemToEdit.imageUrl,
         lastWorn: itemToEdit.lastWorn ? parseISO(itemToEdit.lastWorn) : undefined,
-      });
-      setPreview(itemToEdit.imageUrl);
+      })
+      setPreview(itemToEdit.imageUrl)
     }
-  }, [isEditMode, itemToEdit, form]);
+  }, [isEditMode, itemToEdit, form])
 
-  const onSubmit = (data: FormData) => {
-    const lastWornDate = data.lastWorn ? format(data.lastWorn, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+  const onSubmit = (data) => {
+    const lastWornDate = data.lastWorn ? format(data.lastWorn, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
     
     if (isEditMode && itemToEdit) {
-        const { image, ...updateData } = data;
-        const newImageData = image instanceof FileList ? URL.createObjectURL(image[0]) : undefined;
+        const { image, ...updateData } = data
+        const newImageData = image instanceof FileList ? URL.createObjectURL(image[0]) : undefined
 
         updateItem(itemToEdit.id, {
             ...updateData,
-            season: data.seasons as ItemSeason[],
+            season: data.seasons,
             lastWorn: lastWornDate,
             ...(newImageData && { imageUrl: newImageData })
-        });
+        })
 
         toast({
             title: "Item Updated!",
             description: `${data.name} has been updated.`,
-        });
+        })
     } else {
         addItem({
             name: data.name,
             category: data.category,
             color: data.color,
-            season: data.seasons as ItemSeason[],
+            season: data.seasons,
             imageUrl: URL.createObjectURL(data.image[0]),
             lastWorn: lastWornDate,
-        });
+        })
         toast({
             title: "Item Added!",
             description: `${data.name} has been added to your closet.`,
-        });
+        })
     }
-    router.push('/closet');
-  };
+    navigate('/closet')
+  }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
     if (file) {
-      setPreview(URL.createObjectURL(file));
-      form.setValue('image', e.target.files);
+      setPreview(URL.createObjectURL(file))
+      form.setValue('image', e.target.files)
     }
-  };
+  }
 
   const clearPreview = () => {
-    setPreview(null);
-    form.setValue('image', undefined, { shouldValidate: true });
+    setPreview(null)
+    form.setValue('image', undefined, { shouldValidate: true })
   }
 
   return (
@@ -159,7 +153,7 @@ export default function ScanPage() {
                         <div className="w-full">
                             {preview ? (
                                 <div className='relative w-40 h-56 sm:w-48 sm:h-64 mx-auto'>
-                                    <Image src={preview} alt="Preview" fill className="rounded-lg object-cover" />
+                                    <img src={preview} alt="Preview" className="w-full h-full rounded-lg object-cover" />
                                     <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 rounded-full h-7 w-7 z-10" onClick={clearPreview}>
                                         <X className="h-4 w-4" />
                                     </Button>
@@ -254,19 +248,19 @@ export default function ScanPage() {
                                         checked={field.value?.includes(item)}
                                         onCheckedChange={(checked) => {
                                             if (item === 'All' && checked) {
-                                                return field.onChange(['All']);
+                                                return field.onChange(['All'])
                                             }
                                             
-                                            const newSeasons = field.value?.filter(s => s !== 'All') || [];
+                                            const newSeasons = field.value?.filter(s => s !== 'All') || []
                                             
                                             if (checked) {
-                                                field.onChange([...newSeasons, item]);
+                                                field.onChange([...newSeasons, item])
                                             } else {
                                                 field.onChange(
                                                     newSeasons.filter(
                                                         (value) => value !== item
                                                     )
-                                                );
+                                                )
                                             }
                                         }}
                                         />
@@ -314,8 +308,8 @@ export default function ScanPage() {
                             mode="single"
                             selected={field.value}
                             onSelect={(date) => {
-                                field.onChange(date);
-                                setLastWornPickerOpen(false);
+                                field.onChange(date)
+                                setLastWornPickerOpen(false)
                             }}
                             disabled={(date) =>
                               date > new Date() || date < new Date("1900-01-01")
@@ -332,7 +326,7 @@ export default function ScanPage() {
                   )}
                 />
                 <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                    <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? 'Save Changes' : 'Add Item')}
                     </Button>
@@ -343,5 +337,5 @@ export default function ScanPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

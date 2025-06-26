@@ -1,62 +1,40 @@
-'use client';
+import React, { useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import Image from 'next/image';
-import dynamic from 'next/dynamic';
-
-import AppHeader from '@/components/app/AppHeader';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useWardrobe } from '@/lib/contexts/WardrobeContext';
-import { useToast } from '@/hooks/use-toast';
-import { Upload } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const CategoryChart = dynamic(() => import('@/components/app/CategoryChart'), {
-  ssr: false,
-  loading: () => (
-      <Card className="lg:col-span-2 rounded-2xl shadow-soft border-0">
-          <CardHeader>
-              <CardTitle className="font-headline">Items by Category</CardTitle>
-          </CardHeader>
-          <CardContent>
-              <div className="h-56 sm:h-64 w-full">
-                <Skeleton className="h-full w-full" />
-              </div>
-          </CardContent>
-      </Card>
-  )
-});
-
+import AppHeader from '@/components/app/AppHeader'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import { useToast } from '@/hooks/use-toast'
+import { Upload } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import CategoryChart from '@/components/app/CategoryChart'
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   stylePreferences: z.string().optional(),
   avatar: z.any(),
-});
-
-type ProfileFormData = z.infer<typeof profileFormSchema>;
+})
 
 export default function ProfilePage() {
-  const { closetItems, userProfile, updateUserProfile } = useWardrobe();
-  const { toast } = useToast();
-  const [preview, setPreview] = useState<string | null>(null);
+  const { closetItems, userProfile, updateUserProfile } = useWardrobe()
+  const { toast } = useToast()
+  const [preview, setPreview] = useState(null)
 
-  const form = useForm<ProfileFormData>({
+  const form = useForm({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: '',
       stylePreferences: '',
       avatar: null,
     },
-  });
+  })
 
   useEffect(() => {
     if (userProfile) {
@@ -64,52 +42,52 @@ export default function ProfilePage() {
         name: userProfile.name,
         stylePreferences: userProfile.stylePreferences || '',
         avatar: userProfile.avatarUrl,
-      });
-      setPreview(userProfile.avatarUrl);
+      })
+      setPreview(userProfile.avatarUrl)
     }
-  }, [userProfile, form]);
+  }, [userProfile, form])
 
   const stats = useMemo(() => {
     const categoryCount = closetItems.reduce((acc, item) => {
-      acc[item.category] = (acc[item.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+      acc[item.category] = (acc[item.category] || 0) + 1
+      return acc
+    }, {})
 
     return {
       totalItems: closetItems.length,
       categoryCount: Object.entries(categoryCount).map(([name, value]) => ({ name, count: value })),
-    };
-  }, [closetItems]);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const newPreviewUrl = URL.createObjectURL(file);
-      setPreview(newPreviewUrl);
-      form.setValue('avatar', e.target.files);
     }
-  };
+  }, [closetItems])
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const newPreviewUrl = URL.createObjectURL(file)
+      setPreview(newPreviewUrl)
+      form.setValue('avatar', e.target.files)
+    }
+  }
   
-  const onSubmit = (data: ProfileFormData) => {
+  const onSubmit = (data) => {
     const newAvatarUrl = data.avatar instanceof FileList && data.avatar.length > 0
         ? URL.createObjectURL(data.avatar[0])
-        : userProfile.avatarUrl;
+        : userProfile.avatarUrl
 
     updateUserProfile({
         name: data.name,
         stylePreferences: data.stylePreferences,
         avatarUrl: newAvatarUrl,
-    });
+    })
     
     toast({
         title: "Profile Updated",
         description: "Your changes have been saved successfully.",
-    });
-    form.reset({}, { keepValues: true });
-  };
+    })
+    form.reset({}, { keepValues: true })
+  }
 
   if (!userProfile) {
-    return null; // Or a loading state
+    return null // Or a loading state
   }
 
   return (
@@ -207,5 +185,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

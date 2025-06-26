@@ -1,50 +1,47 @@
-'use client';
-
-import React, { useState, useTransition } from 'react';
-import { Sparkles } from 'lucide-react';
-import { useWardrobe } from '@/lib/contexts/WardrobeContext';
-import { getOutfitSuggestionsAction } from '@/app/actions';
-import AppHeader from '@/components/app/AppHeader';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { GenerateOutfitSuggestionsOutput } from '@/ai/flows/generate-outfit-suggestions';
-import OutfitCard from '@/components/OutfitCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { useState, useTransition } from 'react'
+import { Sparkles } from 'lucide-react'
+import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import { getOutfitSuggestionsAction } from '@/lib/actions'
+import AppHeader from '@/components/app/AppHeader'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import OutfitCard from '@/components/OutfitCard'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function SuggestionsPage() {
-  const { closetItems, userProfile } = useWardrobe();
-  const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-  const [suggestions, setSuggestions] = useState<GenerateOutfitSuggestionsOutput | null>(null);
+  const { closetItems, userProfile } = useWardrobe()
+  const { toast } = useToast()
+  const [isPending, startTransition] = useTransition()
+  const [suggestions, setSuggestions] = useState(null)
 
   const handleGetSuggestions = () => {
     startTransition(async () => {
-      setSuggestions(null);
+      setSuggestions(null)
       if (closetItems.length < 3) {
         toast({
             variant: "destructive",
             title: "Not enough items",
             description: "Please add at least 3 items to your closet to get suggestions.",
-        });
-        return;
+        })
+        return
       }
 
       try {
         const result = await getOutfitSuggestionsAction({ 
           closetItems: closetItems,
           userPreferences: userProfile.stylePreferences,
-        });
-        setSuggestions(result);
+        })
+        setSuggestions(result)
       } catch (error) {
         toast({
             variant: "destructive",
             title: "Error",
             description: "Could not generate suggestions. Please try again.",
-        });
+        })
       }
-    });
-  };
+    })
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -85,5 +82,5 @@ export default function SuggestionsPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

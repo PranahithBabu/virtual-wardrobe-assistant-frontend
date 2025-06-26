@@ -1,27 +1,23 @@
-'use client';
-
-import React, { useState, useMemo } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { format, parseISO } from 'date-fns';
-import { useWardrobe } from '@/lib/contexts/WardrobeContext';
-import AppHeader from '@/components/app/AppHeader';
-import ItemCard from '@/components/ItemCard';
+import React, { useState, useMemo } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { format, parseISO } from 'date-fns'
+import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import AppHeader from '@/components/app/AppHeader'
+import ItemCard from '@/components/ItemCard'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,86 +29,85 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Badge } from '@/components/ui/badge';
-import type { ClosetItem, ItemSeason } from '@/lib/types';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { Plus } from 'lucide-react'
 
 const initialFilters = {
   category: 'all',
   color: 'all',
   season: 'all',
-};
+}
 
 export default function ClosetPage() {
-  const router = useRouter();
-  const { closetItems, deleteItem } = useWardrobe();
-  const { toast } = useToast();
-  const [filters, setFilters] = useState(initialFilters);
-  const [selectedItem, setSelectedItem] = useState<ClosetItem | null>(null);
+  const navigate = useNavigate()
+  const { closetItems, deleteItem } = useWardrobe()
+  const { toast } = useToast()
+  const [filters, setFilters] = useState(initialFilters)
+  const [selectedItem, setSelectedItem] = useState(null)
 
-  const handleFilterChange = (filterType: keyof typeof initialFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [filterType]: value }));
-  };
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }))
+  }
 
   const handleResetFilters = () => {
-    setFilters(initialFilters);
-  };
+    setFilters(initialFilters)
+  }
 
   const isFiltersDefault = useMemo(() => {
-    return filters.category === 'all' && filters.color === 'all' && filters.season === 'all';
-  }, [filters]);
+    return filters.category === 'all' && filters.color === 'all' && filters.season === 'all'
+  }, [filters])
 
   const filteredItems = useMemo(() => {
-    if (closetItems.length === 0) return [];
+    if (closetItems.length === 0) return []
     return closetItems.filter(item => {
-      const categoryMatch = filters.category === 'all' || item.category === filters.category;
-      const colorMatch = filters.color === 'all' || item.color === filters.color;
-      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
-      return categoryMatch && colorMatch && seasonMatch;
-    });
-  }, [closetItems, filters]);
+      const categoryMatch = filters.category === 'all' || item.category === filters.category
+      const colorMatch = filters.color === 'all' || item.color === filters.color
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season)
+      return categoryMatch && colorMatch && seasonMatch
+    })
+  }, [closetItems, filters])
 
   const availableCategories = useMemo(() => {
     const items = closetItems.filter(item => {
-      const colorMatch = filters.color === 'all' || item.color === filters.color;
-      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
-      return colorMatch && seasonMatch;
-    });
-    return ['all', ...Array.from(new Set(items.map(item => item.category)))];
-  }, [closetItems, filters.color, filters.season]);
+      const colorMatch = filters.color === 'all' || item.color === filters.color
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season)
+      return colorMatch && seasonMatch
+    })
+    return ['all', ...Array.from(new Set(items.map(item => item.category)))]
+  }, [closetItems, filters.color, filters.season])
 
   const availableColors = useMemo(() => {
     const items = closetItems.filter(item => {
-      const categoryMatch = filters.category === 'all' || item.category === filters.category;
-      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season as ItemSeason);
-      return categoryMatch && seasonMatch;
-    });
-    return ['all', ...Array.from(new Set(items.map(item => item.color)))];
-  }, [closetItems, filters.category, filters.season]);
+      const categoryMatch = filters.category === 'all' || item.category === filters.category
+      const seasonMatch = filters.season === 'all' || item.season.includes(filters.season)
+      return categoryMatch && seasonMatch
+    })
+    return ['all', ...Array.from(new Set(items.map(item => item.color)))]
+  }, [closetItems, filters.category, filters.season])
 
   const availableSeasons = useMemo(() => {
     const items = closetItems.filter(item => {
-        const categoryMatch = filters.category === 'all' || item.category === filters.category;
-        const colorMatch = filters.color === 'all' || item.color === filters.color;
-        return categoryMatch && colorMatch;
-    });
-    const seasons = new Set(items.flatMap(item => item.season));
-    return ['all', ...Array.from(seasons)];
-  }, [closetItems, filters.category, filters.color]);
+        const categoryMatch = filters.category === 'all' || item.category === filters.category
+        const colorMatch = filters.color === 'all' || item.color === filters.color
+        return categoryMatch && colorMatch
+    })
+    const seasons = new Set(items.flatMap(item => item.season))
+    return ['all', ...Array.from(seasons)]
+  }, [closetItems, filters.category, filters.color])
   
 
   const handleDelete = () => {
     if (selectedItem) {
-      deleteItem(selectedItem.id);
-      toast({ title: "Item Deleted", description: `${selectedItem.name} has been removed from your closet.`});
-      setSelectedItem(null);
+      deleteItem(selectedItem.id)
+      toast({ title: "Item Deleted", description: `${selectedItem.name} has been removed from your closet.`})
+      setSelectedItem(null)
     }
   }
   
-  const hasItems = closetItems.length > 0;
+  const hasItems = closetItems.length > 0
 
   return (
     <div className="flex flex-col h-full">
@@ -176,7 +171,7 @@ export default function ClosetPage() {
                 <h2 className="text-2xl font-semibold tracking-tight font-headline">Your Closet is Empty</h2>
                 <p className="text-muted-foreground mt-2">Start by adding your first item.</p>
                 <Button asChild className="mt-4">
-                <Link href="/scan">Add Item</Link>
+                <Link to="/scan">Add Item</Link>
                 </Button>
             </div>
         )}
@@ -187,11 +182,10 @@ export default function ClosetPage() {
           {selectedItem && (
             <>
               <div className="relative w-full aspect-square md:w-1/2 md:aspect-auto">
-                <Image
+                <img
                   src={selectedItem.imageUrl}
                   alt={selectedItem.name}
-                  fill
-                  className="object-cover md:rounded-l-2xl"
+                  className="w-full h-full object-cover md:rounded-l-2xl"
                 />
               </div>
               <div className="flex flex-col md:w-1/2">
@@ -228,7 +222,7 @@ export default function ClosetPage() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                  <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/scan?edit=${selectedItem.id}`)}>Edit</Button>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate(`/scan?edit=${selectedItem.id}`)}>Edit</Button>
                 </DialogFooter>
               </div>
             </>
@@ -237,7 +231,7 @@ export default function ClosetPage() {
       </Dialog>
       
       {hasItems && (
-        <Link href="/scan" passHref legacyBehavior>
+        <Link to="/scan">
             <Button
             className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
             size="icon"
@@ -248,5 +242,5 @@ export default function ClosetPage() {
         </Link>
       )}
     </div>
-  );
+  )
 }

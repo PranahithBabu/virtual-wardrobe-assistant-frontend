@@ -1,8 +1,25 @@
-import Link from 'next/link';
-import { ArrowRight, Bot, Shirt, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Logo from '@/components/Logo';
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Bot, Shirt, Sparkles } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Logo from '@/components/Logo'
+
+function FeatureCard({ icon, title, description }) {
+  return (
+    <Card className="text-center shadow-soft border-0 rounded-2xl">
+      <CardHeader>
+        <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
+          {icon}
+        </div>
+        <CardTitle className="mt-4 font-headline">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function OnboardingPage() {
   return (
@@ -21,7 +38,7 @@ export default function OnboardingPage() {
           </p>
           <div className="mt-8">
             <Button asChild size="lg" className="rounded-full font-bold">
-              <Link href="/closet">
+              <Link to="/closet">
                 Get Started <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -61,21 +78,5 @@ export default function OnboardingPage() {
         <p>&copy; {new Date().getFullYear()} StyleAI. All rights reserved.</p>
       </footer>
     </div>
-  );
-}
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <Card className="text-center shadow-soft border-0 rounded-2xl">
-      <CardHeader>
-        <div className="mx-auto bg-primary/10 rounded-full p-3 w-fit">
-          {icon}
-        </div>
-        <CardTitle className="mt-4 font-headline">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
+  )
 }

@@ -1,14 +1,11 @@
-'use client';
+import React, { useState, useTransition, useEffect } from 'react'
+import { format, parse, startOfDay, parseISO } from 'date-fns'
+import { Sparkles, Edit, Trash2 } from 'lucide-react'
 
-import React, { useState, useTransition, useEffect } from 'react';
-import { format, parse, startOfDay, parseISO } from 'date-fns';
-import { Sparkles, Edit, Trash2 } from 'lucide-react';
-
-import { useWardrobe } from '@/lib/contexts/WardrobeContext';
-import AppHeader from '@/components/app/AppHeader';
-import { Calendar } from '@/components/ui/calendar';
-import type { DayModifiers } from 'react-day-picker';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import AppHeader from '@/components/app/AppHeader'
+import { Calendar } from '@/components/ui/calendar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,17 +25,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { getOutfitSuggestionsAction } from '@/app/actions';
-import OutfitCard from '@/components/OutfitCard';
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useToast } from '@/hooks/use-toast'
+import { getOutfitSuggestionsAction } from '@/lib/actions'
+import OutfitCard from '@/components/OutfitCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Outfit, PlannedEvent } from '@/lib/types';
-import type { GenerateOutfitSuggestionsOutput } from '@/ai/flows/generate-outfit-suggestions';
-import { Badge } from '@/components/ui/badge';
-
-type OutfitSuggestion = GenerateOutfitSuggestionsOutput['outfitSuggestions'][0];
+import { Badge } from '@/components/ui/badge'
 
 export default function CalendarPage() {
   const { 
@@ -50,86 +43,86 @@ export default function CalendarPage() {
     deleteEvent,
     getOutfitById, 
     addOutfit 
-  } = useWardrobe();
+  } = useWardrobe()
   
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<PlannedEvent | null>(null);
-  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
+  const [date, setDate] = useState(new Date())
+  const [isDialogOpen, setDialogOpen] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [eventToDeleteId, setEventToDeleteId] = useState(null)
 
   // Dialog form state
-  const [occasion, setOccasion] = useState('');
-  const [currentSuggestion, setCurrentSuggestion] = useState<OutfitSuggestion | null>(null);
-  const [suggestedOutfitId, setSuggestedOutfitId] = useState<number | null>(null);
-  const [manualOutfitName, setManualOutfitName] = useState("");
-  const [planType, setPlanType] = useState("suggest");
+  const [occasion, setOccasion] = useState('')
+  const [currentSuggestion, setCurrentSuggestion] = useState(null)
+  const [suggestedOutfitId, setSuggestedOutfitId] = useState(null)
+  const [manualOutfitName, setManualOutfitName] = useState("")
+  const [planType, setPlanType] = useState("suggest")
   
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (isDialogOpen && !selectedEvent) {
-      setOccasion('');
-      setCurrentSuggestion(null);
-      setSuggestedOutfitId(null);
-      setManualOutfitName('');
-      setPlanType('suggest');
+      setOccasion('')
+      setCurrentSuggestion(null)
+      setSuggestedOutfitId(null)
+      setManualOutfitName('')
+      setPlanType('suggest')
     }
-  }, [isDialogOpen, selectedEvent]);
+  }, [isDialogOpen, selectedEvent])
   
    useEffect(() => {
     if (isDialogOpen && selectedEvent) {
-        const outfit = getOutfitById(selectedEvent.outfitId);
-        setOccasion(selectedEvent.occasion);
+        const outfit = getOutfitById(selectedEvent.outfitId)
+        setOccasion(selectedEvent.occasion)
         if (outfit) {
             if (outfit.reasoning) { // AI-suggested outfit
-                setPlanType('suggest');
+                setPlanType('suggest')
                 setCurrentSuggestion({
                     outfit: outfit.name,
                     occasion: selectedEvent.occasion,
                     reasoning: outfit.reasoning,
                     itemIds: outfit.itemIds,
-                });
-                setSuggestedOutfitId(outfit.id);
+                })
+                setSuggestedOutfitId(outfit.id)
             } else { // Manually entered outfit
-                setPlanType('manual');
-                setManualOutfitName(outfit.name);
+                setPlanType('manual')
+                setManualOutfitName(outfit.name)
             }
         }
     }
-  }, [isDialogOpen, selectedEvent, getOutfitById]);
+  }, [isDialogOpen, selectedEvent, getOutfitById])
 
-  const handleDayClick = (day: Date, modifiers: DayModifiers) => {
-    if (modifiers.disabled) return;
-    setDate(day);
-  };
+  const handleDayClick = (day, modifiers) => {
+    if (modifiers.disabled) return
+    setDate(day)
+  }
 
   const handleOpenDialogForNew = () => {
-    setSelectedEvent(null);
-    setDialogOpen(true);
-  };
+    setSelectedEvent(null)
+    setDialogOpen(true)
+  }
 
-  const handleOpenDialogForEdit = (event: PlannedEvent) => {
-    setSelectedEvent(event);
-    setDialogOpen(true);
-  };
+  const handleOpenDialogForEdit = (event) => {
+    setSelectedEvent(event)
+    setDialogOpen(true)
+  }
 
-  const handleDeleteRequest = (eventId: string) => {
-    setEventToDeleteId(eventId);
-  };
+  const handleDeleteRequest = (eventId) => {
+    setEventToDeleteId(eventId)
+  }
   
   const handleConfirmDelete = () => {
     if (eventToDeleteId) {
-      deleteEvent(eventToDeleteId);
-      toast({ title: "Event Deleted", description: "The planned outfit has been removed." });
-      setEventToDeleteId(null);
+      deleteEvent(eventToDeleteId)
+      toast({ title: "Event Deleted", description: "The planned outfit has been removed." })
+      setEventToDeleteId(null)
     }
-  };
+  }
 
   const handleGetSuggestion = () => {
     if (!occasion) {
-        toast({ variant: "destructive", title: "Please enter an occasion."});
-        return;
+        toast({ variant: "destructive", title: "Please enter an occasion."})
+        return
     }
     startTransition(async () => {
       try {
@@ -137,72 +130,72 @@ export default function CalendarPage() {
             closetItems, 
             occasion,
             userPreferences: userProfile.stylePreferences,
-        });
-        const newOutfitSuggestion = result.outfitSuggestions[0];
+        })
+        const newOutfitSuggestion = result.outfitSuggestions[0]
         if (!newOutfitSuggestion) {
-           toast({ variant: "destructive", title: "Could not get a suggestion." });
-           return;
+           toast({ variant: "destructive", title: "Could not get a suggestion." })
+           return
         }
         
-        const newOutfit: Omit<Outfit, 'id'> = {
+        const newOutfit = {
           name: newOutfitSuggestion.outfit,
           itemIds: newOutfitSuggestion.itemIds, 
           reasoning: newOutfitSuggestion.reasoning,
-        };
-        const newOutfitId = addOutfit(newOutfit);
-        setCurrentSuggestion(newOutfitSuggestion);
-        setSuggestedOutfitId(newOutfitId);
+        }
+        const newOutfitId = addOutfit(newOutfit)
+        setCurrentSuggestion(newOutfitSuggestion)
+        setSuggestedOutfitId(newOutfitId)
       } catch (error) {
-        toast({ variant: "destructive", title: "Failed to get suggestion" });
+        toast({ variant: "destructive", title: "Failed to get suggestion" })
       }
-    });
-  };
+    })
+  }
 
   const handleSaveEvent = () => {
-    if (!date) return;
+    if (!date) return
     
-    let outfitId_to_add: number | null = null;
-    let occasion_to_add = occasion;
+    let outfitId_to_add = null
+    let occasion_to_add = occasion
 
     if (planType === 'manual') {
         if (!manualOutfitName) {
-            toast({ variant: "destructive", title: "Please enter an outfit name."});
-            return;
+            toast({ variant: "destructive", title: "Please enter an outfit name."})
+            return
         }
-        const newOutfit: Omit<Outfit, 'id'> = { name: manualOutfitName, itemIds: [] };
-        outfitId_to_add = addOutfit(newOutfit);
-        if (!occasion_to_add) occasion_to_add = "General";
+        const newOutfit = { name: manualOutfitName, itemIds: [] }
+        outfitId_to_add = addOutfit(newOutfit)
+        if (!occasion_to_add) occasion_to_add = "General"
 
     } else { 
         if (!suggestedOutfitId || !currentSuggestion) {
-            toast({ variant: "destructive", title: "Please generate or select an outfit first."});
-            return;
+            toast({ variant: "destructive", title: "Please generate or select an outfit first."})
+            return
         }
-        outfitId_to_add = suggestedOutfitId;
-        occasion_to_add = currentSuggestion.occasion;
+        outfitId_to_add = suggestedOutfitId
+        occasion_to_add = currentSuggestion.occasion
     }
 
     const eventData = {
       date: format(date, 'yyyy-MM-dd'),
       occasion: occasion_to_add,
       outfitId: outfitId_to_add,
-    };
+    }
     
     if (selectedEvent) {
-        updateEvent(selectedEvent.id, eventData);
-        toast({ title: "Event Updated", description: "Your plan has been successfully updated." });
+        updateEvent(selectedEvent.id, eventData)
+        toast({ title: "Event Updated", description: "Your plan has been successfully updated." })
     } else {
-        addEvent(eventData);
-        toast({ title: "Event Added", description: "Outfit has been scheduled." });
+        addEvent(eventData)
+        toast({ title: "Event Added", description: "Outfit has been scheduled." })
     }
 
-    setDialogOpen(false);
-  };
+    setDialogOpen(false)
+  }
   
-  const EventsForDay = ({ selectedDate }: { selectedDate: Date }) => {
+  function EventsForDay({ selectedDate }) {
     const eventsForDay = plannedEvents
       .filter(e => format(parse(e.date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
-      .sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      .sort((a, b) => parseInt(a.id) - parseInt(b.id))
 
     return (
       <Card className="rounded-2xl shadow-soft border-0 lg:sticky lg:top-24">
@@ -221,8 +214,8 @@ export default function CalendarPage() {
           {eventsForDay.length > 0 ? (
             <div className="space-y-3">
               {eventsForDay.map(event => {
-                const outfit = getOutfitById(event.outfitId);
-                if (!outfit) return null;
+                const outfit = getOutfitById(event.outfitId)
+                if (!outfit) return null
                 
                 return (
                   <Card key={event.id} className="rounded-xl shadow-sm border p-3">
@@ -254,8 +247,8 @@ export default function CalendarPage() {
           )}
         </CardContent>
       </Card>
-    );
-  };
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -356,5 +349,5 @@ export default function CalendarPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
+  )
 }
