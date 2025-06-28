@@ -9,19 +9,33 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.styleai.service.UserService;
+
+import java.util.Arrays;
+
+/**
+ * Security Configuration for JWT-based authentication
+ * 
+ * This configuration breaks circular dependencies by:
+ * 1. Creating beans in the correct order
+ * 2. Using method parameters for dependency injection
+ * 3. Avoiding field injection in security components
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     /**
-     * Password encoder bean - defined first to avoid circular dependencies
+     * Password encoder bean - created first with no dependencies
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -29,16 +43,7 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Filter bean - created here to control initialization order
-     * This breaks the circular dependency by creating the filter as a bean method
-     */
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
-        return new JwtAuthenticationFilter(jwtUtils, userDetailsService);
-    }
-
-    /**
-     * JWT Utils bean
+     * JWT Utils bean - created early with no dependencies
      */
     @Bean
     public JwtUtils jwtUtils() {
@@ -46,18 +51,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Authentication provider configuration
-     */
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-        return authProvider;
-    }
-
-    /**
-     * Authentication manager configuration
+     * Authentication Manager - created from Spring's configuration
+     * This is needed for manual authentication in UserService
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -65,7 +60,28 @@ public class SecurityConfig {
     }
 
     /**
-     * Security filter chain configuration
+     * Authentication Provider - depends on UserService and PasswordEncoder
+     * UserService is injected by Spring automatically as UserDetailsService
+     */
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(UserService userService, PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userService);
+        authProvider.setPasswordEncoder(passwordEncoder);
+        return authProvider;
+    }
+
+    /**
+     * JWT Authentication Filter - created with explicit dependencies
+     * This breaks the circular dependency by not autowiring UserService directly
+     */
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtils jwtUtils, UserService userService) {
+        return new JwtAuthenticationFilter(jwtUtils, userService);
+    }
+
+    /**
+     * Security Filter Chain Configuration
      */
     @Bean
     public SecurityFilterChain filterChain(
@@ -92,5 +108,22 @@ public class SecurityConfig {
         http.headers().frameOptions().disable();
 
         return http.build();
+    }
+
+    /**
+     * CORS Configuration Source
+     * Note: This is separate from CorsConfig to avoid bean name conflicts
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
