@@ -27,12 +27,12 @@ import {
 import Logo from '@/components/Logo'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Button } from '../ui/button'
-import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import { useAuth } from '@/lib/contexts/AuthContext'
 
 function AppSidebar() {
   const location = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
-  const { userProfile } = useWardrobe()
+  const { user, signOut } = useAuth()
 
   const menuItems = [
     { href: '/closet', label: 'My Closet', icon: Home },
@@ -44,6 +44,11 @@ function AppSidebar() {
     if (isMobile) {
       setOpenMobile(false)
     }
+  }
+
+  const handleSignOut = () => {
+    signOut()
+    handleNavigation()
   }
 
   return (
@@ -74,10 +79,10 @@ function AppSidebar() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start gap-2 p-2 h-auto group-data-[state=collapsed]:w-auto group-data-[state=collapsed]:h-auto group-data-[state=collapsed]:aspect-square group-data-[state=collapsed]:hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
-                        <AvatarFallback>{userProfile.name?.[0].toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+                        <AvatarFallback>{user?.name?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <span className="group-data-[state=collapsed]:hidden">{userProfile.name}</span>
+                    <span className="group-data-[state=collapsed]:hidden">{user?.name}</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side={isMobile ? 'top' : 'right'} align="end" className="w-56">
@@ -88,7 +93,7 @@ function AppSidebar() {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleNavigation}>
+                <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>
                 </DropdownMenuItem>

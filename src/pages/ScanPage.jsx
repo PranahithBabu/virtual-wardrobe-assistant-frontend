@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Upload, X, CalendarIcon } from 'lucide-react'
+import { Upload, X, CalendarIcon, Sparkles, Loader2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
 import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import { aiAPI } from '@/lib/api'
 import AppHeader from '@/components/app/AppHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,6 +55,8 @@ export default function ScanPage() {
   const { toast } = useToast()
   const [preview, setPreview] = useState(null)
   const [isLastWornPickerOpen, setLastWornPickerOpen] = useState(false)
+  const [isAIProcessing, setIsAIProcessing] = useState(false)
+  const [aiSuggestion, setAiSuggestion] = useState(null)
   
   const itemId = searchParams.get('edit')
   const isEditMode = !!itemId
@@ -84,6 +87,89 @@ export default function ScanPage() {
     }
   }, [isEditMode, itemToEdit, form])
 
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1] // Remove data:image/jpeg;base64, prefix
+        resolve(base64)
+      }
+      reader.onerror = error => reject(error)
+    })
+  }
+
+  const handleImageAnalysis = async (file) => {
+    setIsAIProcessing(true)
+    try {
+      const base64 = await convertFileToBase64(file)
+      const analysis = await aiAPI.analyzeImage(base64)
+      
+      setAiSuggestion(analysis)
+      
+      // Auto-fill form with AI suggestions
+      form.setValue('name', analysis.name)
+      form.setValue('category', analysis.category)
+      form.setValue('color', analysis.color)
+      form.setValue('seasons', analysis.seasons)
+      
+      toast({
+        title: "AI Analysis Complete!",
+        description: "We've auto-filled the form with detected information. Feel free to edit as needed.",
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "AI Analysis Failed",
+        description: "We couldn't analyze the image. Please fill in the details manually.",
+      })
+    } finally {
+      setIsAIProcessing(false)
+    }
+  }
+
+  const handleTextAnalysis = async (itemName) => {
+    if (!itemName || itemName.length < 2) return
+    
+    setIsAIProcessing(true)
+    try {
+      const analysis = await aiAPI.analyzeText(itemName)
+      
+      setAiSuggestion(analysis)
+      
+      // Auto-fill form with AI suggestions (except name which user already entered)
+      if (analysis.category && analysis.category !== 'Unknown') {
+        form.setValue('category', analysis.category)
+      }
+      if (analysis.color && analysis.color !== 'Unknown') {
+        form.setValue('color', analysis.color)
+      }
+      if (analysis.seasons && analysis.seasons.length > 0) {
+        form.setValue('seasons', analysis.seasons)
+      }
+      
+      // Generate image for manual entry
+      const imageResponse = await aiAPI.generateImage(itemName, '')
+      if (imageResponse.imageUrl) {
+        setPreview(imageResponse.imageUrl)
+        form.setValue('image', imageResponse.imageUrl)
+      }
+      
+      toast({
+        title: "AI Suggestions Ready!",
+        description: "We've suggested categories and generated an image. Feel free to adjust as needed.",
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "AI Analysis Failed",
+        description: "We couldn't analyze the text. Please fill in the details manually.",
+      })
+    } finally {
+      setIsAIProcessing(false)
+    }
+  }
+
   const onSubmit = (data) => {
     const lastWornDate = data.lastWorn ? format(data.lastWorn, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
     
@@ -103,13 +189,16 @@ export default function ScanPage() {
             description: `${data.name} has been updated.`,
         })
     } else {
+        const imageUrl = typeof data.image === 'string' ? data.image : URL.createObjectURL(data.image[0])
+        
         addItem({
             name: data.name,
             category: data.category,
             color: data.color,
             season: data.seasons,
-            imageUrl: URL.createObjectURL(data.image[0]),
+            imageUrl: imageUrl,
             lastWorn: lastWornDate,
+            dataAiHint: aiSuggestion?.dataAiHint || `${data.color.toLowerCase()} ${data.name.toLowerCase()}`,
         })
         toast({
             title: "Item Added!",
@@ -119,18 +208,36 @@ export default function ScanPage() {
     navigate('/closet')
   }
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
     if (file) {
       setPreview(URL.createObjectURL(file))
       form.setValue('image', e.target.files)
+      
+      // Trigger AI analysis for uploaded images
+      if (!isEditMode) {
+        await handleImageAnalysis(file)
+      }
     }
   }
 
   const clearPreview = () => {
     setPreview(null)
     form.setValue('image', undefined, { shouldValidate: true })
+    setAiSuggestion(null)
   }
+
+  // Watch name field for text analysis
+  const watchedName = form.watch('name')
+  useEffect(() => {
+    if (!isEditMode && watchedName && watchedName.length >= 3 && !preview) {
+      const timeoutId = setTimeout(() => {
+        handleTextAnalysis(watchedName)
+      }, 1000) // Debounce for 1 second
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [watchedName, isEditMode, preview])
 
   return (
     <div className="flex flex-col h-full">
@@ -138,7 +245,21 @@ export default function ScanPage() {
       <div className="flex-grow p-4 md:p-6 lg:p-8">
         <Card className="max-w-2xl mx-auto rounded-2xl shadow-soft border-0">
           <CardHeader>
-            <CardTitle>Item Details</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Item Details
+              {isAIProcessing && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  AI analyzing...
+                </div>
+              )}
+            </CardTitle>
+            {aiSuggestion && (
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <Sparkles className="h-4 w-4" />
+                AI suggestions applied
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -164,6 +285,9 @@ export default function ScanPage() {
                                         <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
                                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
                                         <p className="text-xs text-muted-foreground">PNG, JPG or WEBP</p>
+                                        {!isEditMode && (
+                                          <p className="text-xs text-primary mt-2">✨ AI will auto-detect item details</p>
+                                        )}
                                     </div>
                                     <Input id="dropzone-file" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                                 </label>
@@ -185,6 +309,11 @@ export default function ScanPage() {
                         <FormControl>
                           <Input placeholder="e.g., White Cotton T-Shirt" {...field} />
                         </FormControl>
+                        {!isEditMode && !preview && (
+                          <FormDescription>
+                            ✨ AI will suggest details as you type
+                          </FormDescription>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -327,7 +456,7 @@ export default function ScanPage() {
                 />
                 <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                    <Button type="submit" disabled={form.formState.isSubmitting || isAIProcessing}>
                         {form.formState.isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? 'Save Changes' : 'Add Item')}
                     </Button>
                 </div>

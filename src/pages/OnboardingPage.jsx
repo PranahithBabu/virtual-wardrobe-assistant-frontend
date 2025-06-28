@@ -1,9 +1,14 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Bot, Shirt, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Logo from '@/components/Logo'
+import SignInForm from '@/components/auth/SignInForm'
+import SignUpForm from '@/components/auth/SignUpForm'
+import { useAuth } from '@/lib/contexts/AuthContext'
 
 function FeatureCard({ icon, title, description }) {
   return (
@@ -22,10 +27,40 @@ function FeatureCard({ icon, title, description }) {
 }
 
 export default function OnboardingPage() {
+  const [isAuthDialogOpen, setAuthDialogOpen] = useState(false)
+  const [authTab, setAuthTab] = useState('signin')
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/closet')
+    }
+  }, [isAuthenticated, navigate])
+
+  const handleAuthSuccess = () => {
+    setAuthDialogOpen(false)
+    navigate('/closet')
+  }
+
+  const handleGetStarted = () => {
+    setAuthTab('signin')
+    setAuthDialogOpen(true)
+  }
+
+  const handleSignUp = () => {
+    setAuthTab('signup')
+    setAuthDialogOpen(true)
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Logo />
+        <Button variant="outline" onClick={handleSignUp}>
+          Sign Up
+        </Button>
       </header>
 
       <main className="flex-grow">
@@ -36,11 +71,12 @@ export default function OnboardingPage() {
           <p className="mt-4 max-w-2xl mx-auto text-lg sm:text-xl text-muted-foreground">
             StyleAI helps you digitize your closet, discover new looks, and plan your outfits with the power of artificial intelligence.
           </p>
-          <div className="mt-8">
-            <Button asChild size="lg" className="rounded-full font-bold">
-              <Link to="/closet">
-                Get Started <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+          <div className="mt-8 flex gap-4 justify-center">
+            <Button size="lg" className="rounded-full font-bold" onClick={handleGetStarted}>
+              Get Started <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button variant="outline" size="lg" className="rounded-full font-bold" onClick={handleSignUp}>
+              Create Account
             </Button>
           </div>
         </section>
@@ -77,6 +113,28 @@ export default function OnboardingPage() {
       <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} StyleAI. All rights reserved.</p>
       </footer>
+
+      <Dialog open={isAuthDialogOpen} onOpenChange={setAuthDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-center font-headline">
+              {authTab === 'signin' ? 'Welcome Back' : 'Join StyleAI'}
+            </DialogTitle>
+          </DialogHeader>
+          <Tabs value={authTab} onValueChange={setAuthTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin" className="mt-6">
+              <SignInForm onSuccess={handleAuthSuccess} />
+            </TabsContent>
+            <TabsContent value="signup" className="mt-6">
+              <SignUpForm onSuccess={handleAuthSuccess} />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
