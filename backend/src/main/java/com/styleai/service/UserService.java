@@ -6,7 +6,6 @@ import com.styleai.dto.SignUpRequest;
 import com.styleai.entity.User;
 import com.styleai.repository.UserRepository;
 import com.styleai.security.JwtUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,33 +22,44 @@ import java.util.Optional;
  * User Service implementing UserDetailsService for Spring Security
  * 
  * This service handles user authentication, registration, and user details loading.
- * Uses constructor injection for critical dependencies to avoid circular references.
+ * 
+ * IMPORTANT: To break circular dependency, this service uses @Lazy injection
+ * for AuthenticationManager, which is only needed for sign-in operations.
  */
 @Service
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    
+    // Lazy injection to break circular dependency
+    private AuthenticationManager authenticationManager;
 
     /**
-     * Constructor injection for all dependencies
-     * This approach avoids circular dependency issues with Spring Security
+     * Constructor injection for core dependencies
+     * AuthenticationManager is injected separately to avoid circular dependency
      */
     public UserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager,
             JwtUtils jwtUtils) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
     }
 
     /**
+     * Setter injection for AuthenticationManager to break circular dependency
+     * This is called after all beans are created
+     */
+    public void setAuthenticationManager(AuthenticationManager authenticationManager) {
+        this.authenticationManager = authenticationManager;
+    }
+
+    /**
      * Load user by username (email) for Spring Security
+     * This method is used by DaoAuthenticationProvider
      */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -98,8 +108,14 @@ public class UserService implements UserDetailsService {
 
     /**
      * User authentication
+     * Uses AuthenticationManager for credential validation
      */
     public AuthResponse signIn(AuthRequest authRequest) {
+        // Ensure AuthenticationManager is available
+        if (authenticationManager == null) {
+            throw new RuntimeException("Authentication manager not initialized");
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.getEmail(),
