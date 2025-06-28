@@ -23,7 +23,7 @@ import java.util.Optional;
  * 
  * This service handles user authentication, registration, and user details loading.
  * 
- * IMPORTANT: To break circular dependency, this service uses @Lazy injection
+ * IMPORTANT: To break circular dependency, this service uses setter injection
  * for AuthenticationManager, which is only needed for sign-in operations.
  */
 @Service
@@ -33,7 +33,7 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     
-    // Lazy injection to break circular dependency
+    // Setter injection to break circular dependency
     private AuthenticationManager authenticationManager;
 
     /**
@@ -75,12 +75,15 @@ public class UserService implements UserDetailsService {
 
     /**
      * User registration
+     * Creates a new user account and returns authentication response with JWT token
      */
     public AuthResponse signUp(SignUpRequest signUpRequest) {
+        // Check if user already exists
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             throw new RuntimeException("Email is already in use!");
         }
 
+        // Create new user entity
         User user = new User();
         user.setName(signUpRequest.getName());
         user.setEmail(signUpRequest.getEmail());
@@ -90,20 +93,25 @@ public class UserService implements UserDetailsService {
         user.setCountry(signUpRequest.getCountry());
         user.setCity(signUpRequest.getCity());
 
+        // Save user to database
         User savedUser = userRepository.save(user);
 
+        // Generate JWT token for the new user
         String jwt = jwtUtils.generateJwtToken(savedUser.getEmail());
 
-        return new AuthResponse(
-                jwt,
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getEmail(),
-                savedUser.getAvatarUrl(),
-                savedUser.getStylePreferences(),
-                savedUser.getCountry(),
-                savedUser.getCity()
-        );
+        // Create and return AuthResponse with all required fields
+        AuthResponse response = new AuthResponse();
+        response.setToken(jwt);
+        response.setType("Bearer"); // This is set in the constructor, but let's be explicit
+        response.setId(savedUser.getId());
+        response.setName(savedUser.getName());
+        response.setEmail(savedUser.getEmail());
+        response.setAvatarUrl(savedUser.getAvatarUrl());
+        response.setStylePreferences(savedUser.getStylePreferences());
+        response.setCountry(savedUser.getCountry());
+        response.setCity(savedUser.getCity());
+
+        return response;
     }
 
     /**
@@ -116,6 +124,7 @@ public class UserService implements UserDetailsService {
             throw new RuntimeException("Authentication manager not initialized");
         }
 
+        // Authenticate user credentials
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.getEmail(),
@@ -123,21 +132,26 @@ public class UserService implements UserDetailsService {
                 )
         );
 
+        // Generate JWT token
         String jwt = jwtUtils.generateJwtToken(authRequest.getEmail());
 
+        // Get user details from database
         User user = userRepository.findByEmail(authRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return new AuthResponse(
-                jwt,
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getAvatarUrl(),
-                user.getStylePreferences(),
-                user.getCountry(),
-                user.getCity()
-        );
+        // Create and return AuthResponse with all required fields
+        AuthResponse response = new AuthResponse();
+        response.setToken(jwt);
+        response.setType("Bearer");
+        response.setId(user.getId());
+        response.setName(user.getName());
+        response.setEmail(user.getEmail());
+        response.setAvatarUrl(user.getAvatarUrl());
+        response.setStylePreferences(user.getStylePreferences());
+        response.setCountry(user.getCountry());
+        response.setCity(user.getCity());
+
+        return response;
     }
 
     public Optional<User> findByEmail(String email) {
