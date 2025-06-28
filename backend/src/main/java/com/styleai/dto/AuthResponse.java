@@ -8,17 +8,21 @@ public class AuthResponse {
     private String email;
     private String avatarUrl;
     private String stylePreferences;
+    private String country;
+    private String city;
 
     // Constructors
     public AuthResponse() {}
 
-    public AuthResponse(String token, Long id, String name, String email, String avatarUrl, String stylePreferences) {
+    public AuthResponse(String token, Long id, String name, String email, String avatarUrl, String stylePreferences, String country, String city) {
         this.token = token;
         this.id = id;
         this.name = name;
         this.email = email;
         this.avatarUrl = avatarUrl;
         this.stylePreferences = stylePreferences;
+        this.country = country;
+        this.city = city;
     }
 
     // Getters and Setters
@@ -42,4 +46,10 @@ public class AuthResponse {
 
     public String getStylePreferences() { return stylePreferences; }
     public void setStylePreferences(String stylePreferences) { this.stylePreferences = stylePreferences; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 }

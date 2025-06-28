@@ -178,4 +178,9 @@ export const aiAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+
+  getWeatherBasedSuggestions: (data) => apiRequest('/ai/weather-based-suggestions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 }

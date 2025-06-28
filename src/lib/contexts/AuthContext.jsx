@@ -30,6 +30,8 @@ export function AuthProvider({ children }) {
         email: response.email,
         avatarUrl: response.avatarUrl,
         stylePreferences: response.stylePreferences,
+        country: response.country,
+        city: response.city,
       })
       localStorage.setItem('userData', JSON.stringify({
         id: response.id,
@@ -37,6 +39,8 @@ export function AuthProvider({ children }) {
         email: response.email,
         avatarUrl: response.avatarUrl,
         stylePreferences: response.stylePreferences,
+        country: response.country,
+        city: response.city,
       }))
       return response
     } catch (error) {
@@ -54,6 +58,8 @@ export function AuthProvider({ children }) {
         email: response.email,
         avatarUrl: response.avatarUrl,
         stylePreferences: response.stylePreferences,
+        country: response.country,
+        city: response.city,
       })
       localStorage.setItem('userData', JSON.stringify({
         id: response.id,
@@ -61,6 +67,8 @@ export function AuthProvider({ children }) {
         email: response.email,
         avatarUrl: response.avatarUrl,
         stylePreferences: response.stylePreferences,
+        country: response.country,
+        city: response.city,
       }))
       return response
     } catch (error) {

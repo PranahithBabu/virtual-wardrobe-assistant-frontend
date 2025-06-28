@@ -34,6 +34,12 @@ public class User {
     @Column(name = "style_preferences", columnDefinition = "TEXT")
     private String stylePreferences;
 
+    @Column(name = "country")
+    private String country;
+
+    @Column(name = "city")
+    private String city;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -78,6 +84,12 @@ public class User {
 
     public String getStylePreferences() { return stylePreferences; }
     public void setStylePreferences(String stylePreferences) { this.stylePreferences = stylePreferences; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -57,6 +57,8 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
         user.setAvatarUrl(signUpRequest.getAvatarUrl());
         user.setStylePreferences(signUpRequest.getStylePreferences());
+        user.setCountry(signUpRequest.getCountry());
+        user.setCity(signUpRequest.getCity());
 
         User savedUser = userRepository.save(user);
 
@@ -68,7 +70,9 @@ public class UserService implements UserDetailsService {
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getAvatarUrl(),
-                savedUser.getStylePreferences()
+                savedUser.getStylePreferences(),
+                savedUser.getCountry(),
+                savedUser.getCity()
         );
     }
 
@@ -91,7 +95,9 @@ public class UserService implements UserDetailsService {
                 user.getName(),
                 user.getEmail(),
                 user.getAvatarUrl(),
-                user.getStylePreferences()
+                user.getStylePreferences(),
+                user.getCountry(),
+                user.getCity()
         );
     }
 
@@ -115,6 +121,12 @@ public class UserService implements UserDetailsService {
         }
         if (userDetails.getStylePreferences() != null) {
             user.setStylePreferences(userDetails.getStylePreferences());
+        }
+        if (userDetails.getCountry() != null) {
+            user.setCountry(userDetails.getCountry());
+        }
+        if (userDetails.getCity() != null) {
+            user.setCity(userDetails.getCity());
         }
         
         return userRepository.save(user);
