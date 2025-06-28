@@ -19,21 +19,38 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Optional;
 
+/**
+ * User Service implementing UserDetailsService for Spring Security
+ * 
+ * This service handles user authentication, registration, and user details loading.
+ * Uses constructor injection for critical dependencies to avoid circular references.
+ */
 @Service
 public class UserService implements UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    /**
+     * Constructor injection for all dependencies
+     * This approach avoids circular dependency issues with Spring Security
+     */
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtUtils jwtUtils) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+    }
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUtils jwtUtils;
-
+    /**
+     * Load user by username (email) for Spring Security
+     */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
@@ -46,6 +63,9 @@ public class UserService implements UserDetailsService {
         );
     }
 
+    /**
+     * User registration
+     */
     public AuthResponse signUp(SignUpRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             throw new RuntimeException("Email is already in use!");
@@ -76,6 +96,9 @@ public class UserService implements UserDetailsService {
         );
     }
 
+    /**
+     * User authentication
+     */
     public AuthResponse signIn(AuthRequest authRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
