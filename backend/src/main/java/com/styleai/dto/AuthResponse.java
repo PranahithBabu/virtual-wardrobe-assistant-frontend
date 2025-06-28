@@ -1,5 +1,9 @@
 package com.styleai.dto;
 
+/**
+ * Authentication Response DTO
+ * Contains user information and JWT token after successful authentication
+ */
 public class AuthResponse {
     private String token;
     private String type = "Bearer";
@@ -11,9 +15,10 @@ public class AuthResponse {
     private String country;
     private String city;
 
-    // Constructors
+    // Default constructor
     public AuthResponse() {}
 
+    // Constructor with all fields
     public AuthResponse(String token, Long id, String name, String email, String avatarUrl, String stylePreferences, String country, String city) {
         this.token = token;
         this.id = id;
@@ -26,30 +31,90 @@ public class AuthResponse {
     }
 
     // Getters and Setters
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
+    public String getToken() { 
+        return token; 
+    }
+    
+    public void setToken(String token) { 
+        this.token = token; 
+    }
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public String getType() { 
+        return type; 
+    }
+    
+    public void setType(String type) { 
+        this.type = type; 
+    }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() { 
+        return id; 
+    }
+    
+    public void setId(Long id) { 
+        this.id = id; 
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() { 
+        return name; 
+    }
+    
+    public void setName(String name) { 
+        this.name = name; 
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getEmail() { 
+        return email; 
+    }
+    
+    public void setEmail(String email) { 
+        this.email = email; 
+    }
 
-    public String getAvatarUrl() { return avatarUrl; }
-    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public String getAvatarUrl() { 
+        return avatarUrl; 
+    }
+    
+    public void setAvatarUrl(String avatarUrl) { 
+        this.avatarUrl = avatarUrl; 
+    }
 
-    public String getStylePreferences() { return stylePreferences; }
-    public void setStylePreferences(String stylePreferences) { this.stylePreferences = stylePreferences; }
+    public String getStylePreferences() { 
+        return stylePreferences; 
+    }
+    
+    public void setStylePreferences(String stylePreferences) { 
+        this.stylePreferences = stylePreferences; 
+    }
 
-    public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
+    public String getCountry() { 
+        return country; 
+    }
+    
+    public void setCountry(String country) { 
+        this.country = country; 
+    }
 
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
+    public String getCity() { 
+        return city; 
+    }
+    
+    public void setCity(String city) { 
+        this.city = city; 
+    }
+
+    @Override
+    public String toString() {
+        return "AuthResponse{" +
+                "token='" + (token != null ? "[PROTECTED]" : "null") + '\'' +
+                ", type='" + type + '\'' +
+                ", id=" + id +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", avatarUrl='" + avatarUrl + '\'' +
+                ", stylePreferences='" + stylePreferences + '\'' +
+                ", country='" + country + '\'' +
+                ", city='" + city + '\'' +
+                '}';
+    }
 }
