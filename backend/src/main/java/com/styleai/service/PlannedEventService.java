@@ -63,12 +63,23 @@ public class PlannedEventService {
         return false;
     }
 
+    public boolean canModifyEvent(Long id) {
+        Optional<PlannedEvent> event = plannedEventRepository.findById(id);
+        if (event.isPresent()) {
+            LocalDate eventDate = event.get().getDate();
+            LocalDate today = LocalDate.now();
+            return !eventDate.isBefore(today);
+        }
+        return false;
+    }
+
     private PlannedEventDTO convertToDTO(PlannedEvent event) {
         PlannedEventDTO dto = new PlannedEventDTO();
         dto.setId(event.getId());
         dto.setDate(event.getDate());
         dto.setOccasion(event.getOccasion());
         dto.setOutfitId(event.getOutfitId());
+        dto.setTimesOfDay(event.getTimesOfDay());
         return dto;
     }
 
@@ -77,6 +88,7 @@ public class PlannedEventService {
         event.setDate(dto.getDate());
         event.setOccasion(dto.getOccasion());
         event.setOutfitId(dto.getOutfitId());
+        event.setTimesOfDay(dto.getTimesOfDay());
         return event;
     }
 
@@ -84,5 +96,6 @@ public class PlannedEventService {
         event.setDate(dto.getDate());
         event.setOccasion(dto.getOccasion());
         event.setOutfitId(dto.getOutfitId());
+        event.setTimesOfDay(dto.getTimesOfDay());
     }
 }

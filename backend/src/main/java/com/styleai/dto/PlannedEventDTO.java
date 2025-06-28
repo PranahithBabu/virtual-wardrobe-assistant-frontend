@@ -3,6 +3,7 @@ package com.styleai.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 
 public class PlannedEventDTO {
     private Long id;
@@ -15,6 +16,8 @@ public class PlannedEventDTO {
     
     @NotNull(message = "Outfit ID is required")
     private Long outfitId;
+
+    private List<String> timesOfDay;
 
     // Constructors
     public PlannedEventDTO() {}
@@ -31,4 +34,7 @@ public class PlannedEventDTO {
 
     public Long getOutfitId() { return outfitId; }
     public void setOutfitId(Long outfitId) { this.outfitId = outfitId; }
+
+    public List<String> getTimesOfDay() { return timesOfDay; }
+    public void setTimesOfDay(List<String> timesOfDay) { this.timesOfDay = timesOfDay; }
 }

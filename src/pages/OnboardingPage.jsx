@@ -1,9 +1,14 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Bot, Shirt, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Logo from '@/components/Logo'
+import SignInForm from '@/components/auth/SignInForm'
+import SignUpForm from '@/components/auth/SignUpForm'
+import { useAuth } from '@/lib/contexts/AuthContext'
 
 function FeatureCard({ icon, title, description }) {
   return (
@@ -22,10 +27,40 @@ function FeatureCard({ icon, title, description }) {
 }
 
 export default function OnboardingPage() {
+  const [isAuthDialogOpen, setAuthDialogOpen] = useState(false)
+  const [authTab, setAuthTab] = useState('signin')
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/closet')
+    }
+  }, [isAuthenticated, navigate])
+
+  const handleAuthSuccess = () => {
+    setAuthDialogOpen(false)
+    navigate('/closet')
+  }
+
+  const handleGetStarted = () => {
+    setAuthTab('signin')
+    setAuthDialogOpen(true)
+  }
+
+  const handleSignUp = () => {
+    setAuthTab('signup')
+    setAuthDialogOpen(true)
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
         <Logo />
+        <Button variant="outline" onClick={handleSignUp} className="rounded-full">
+          Sign Up
+        </Button>
       </header>
 
       <main className="flex-grow">
@@ -33,23 +68,24 @@ export default function OnboardingPage() {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground font-headline">
             Meet Your Personal Stylist
           </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-lg sm:text-xl text-muted-foreground">
+          <p className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-muted-foreground leading-relaxed">
             StyleAI helps you digitize your closet, discover new looks, and plan your outfits with the power of artificial intelligence.
           </p>
-          <div className="mt-8">
-            <Button asChild size="lg" className="rounded-full font-bold">
-              <Link to="/closet">
-                Get Started <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="rounded-full font-bold px-8" onClick={handleGetStarted}>
+              Get Started <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button variant="outline" size="lg" className="rounded-full font-bold px-8" onClick={handleSignUp}>
+              Create Account
             </Button>
           </div>
         </section>
 
-        <section className="bg-secondary/50">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-            <div className="text-center mb-12">
+        <section className="bg-secondary/50 py-16 sm:py-24">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold font-headline">Why You'll Love StyleAI</h2>
-              <p className="mt-3 max-w-2xl mx-auto text-md text-muted-foreground">
+              <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
                 Rediscover your wardrobe and streamline your daily routine.
               </p>
             </div>
@@ -74,9 +110,33 @@ export default function OnboardingPage() {
         </section>
       </main>
 
-      <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-muted-foreground">
+      <footer className="container mx-auto px-4 sm:px-6 py-8 text-center text-muted-foreground border-t">
         <p>&copy; {new Date().getFullYear()} StyleAI. All rights reserved.</p>
       </footer>
+
+      <Dialog open={isAuthDialogOpen} onOpenChange={setAuthDialogOpen}>
+        <DialogContent className="sm:max-w-lg rounded-2xl p-0 max-h-[90vh] overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle className="text-center font-headline text-2xl">
+              {authTab === 'signin' ? 'Welcome Back' : 'Join StyleAI'}
+            </DialogTitle>
+          </DialogHeader>
+          <Tabs value={authTab} onValueChange={setAuthTab} className="w-full">
+            <div className="px-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="signin" className="mt-0">
+              <SignInForm onSuccess={handleAuthSuccess} />
+            </TabsContent>
+            <TabsContent value="signup" className="mt-0">
+              <SignUpForm onSuccess={handleAuthSuccess} />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

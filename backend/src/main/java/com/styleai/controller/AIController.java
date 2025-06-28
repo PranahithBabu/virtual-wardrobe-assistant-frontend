@@ -15,21 +15,15 @@ public class AIController {
     @Autowired
     private AIService aiService;
 
-    @PostMapping("/analyze-image")
-    public ResponseEntity<AIAnalysisResponse> analyzeImage(@Valid @RequestBody AIAnalysisRequest request) {
-        AIAnalysisResponse response = aiService.analyzeImage(request);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/generate-image")
-    public ResponseEntity<AIImageGenerationResponse> generateImage(@Valid @RequestBody AIImageGenerationRequest request) {
-        AIImageGenerationResponse response = aiService.generateImage(request);
-        return ResponseEntity.ok(response);
-    }
-
     @PostMapping("/outfit-suggestions")
     public ResponseEntity<OutfitSuggestionResponse> generateOutfitSuggestions(@Valid @RequestBody OutfitSuggestionRequest request) {
         OutfitSuggestionResponse response = aiService.generateOutfitSuggestions(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/weather-based-suggestions")
+    public ResponseEntity<OutfitSuggestionResponse> generateWeatherBasedOutfitSuggestions(@Valid @RequestBody WeatherBasedOutfitRequest request) {
+        OutfitSuggestionResponse response = aiService.generateWeatherBasedOutfitSuggestions(request);
         return ResponseEntity.ok(response);
     }
 }

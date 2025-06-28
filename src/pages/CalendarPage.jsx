@@ -1,8 +1,10 @@
 import React, { useState, useTransition, useEffect } from 'react'
-import { format, parse, startOfDay, parseISO } from 'date-fns'
+import { format, parse, startOfDay, parseISO, isBefore } from 'date-fns'
 import { Sparkles, Edit, Trash2 } from 'lucide-react'
 
 import { useWardrobe } from '@/lib/contexts/WardrobeContext'
+import { useAuth } from '@/lib/contexts/AuthContext'
+import { aiAPI } from '@/lib/api'
 import AppHeader from '@/components/app/AppHeader'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,15 +30,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { getOutfitSuggestionsAction } from '@/lib/actions'
 import OutfitCard from '@/components/OutfitCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from '@/components/ui/badge'
+import TimeOfDaySelector from '@/components/TimeOfDaySelector'
 
 export default function CalendarPage() {
   const { 
     closetItems,
-    userProfile,
     plannedEvents, 
     addEvent, 
     updateEvent,
@@ -45,6 +46,8 @@ export default function CalendarPage() {
     addOutfit 
   } = useWardrobe()
   
+  const { user } = useAuth()
+  
   const [date, setDate] = useState(new Date())
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -52,6 +55,7 @@ export default function CalendarPage() {
 
   // Dialog form state
   const [occasion, setOccasion] = useState('')
+  const [timesOfDay, setTimesOfDay] = useState([])
   const [currentSuggestion, setCurrentSuggestion] = useState(null)
   const [suggestedOutfitId, setSuggestedOutfitId] = useState(null)
   const [manualOutfitName, setManualOutfitName] = useState("")
@@ -63,6 +67,7 @@ export default function CalendarPage() {
   useEffect(() => {
     if (isDialogOpen && !selectedEvent) {
       setOccasion('')
+      setTimesOfDay([])
       setCurrentSuggestion(null)
       setSuggestedOutfitId(null)
       setManualOutfitName('')
@@ -74,6 +79,7 @@ export default function CalendarPage() {
     if (isDialogOpen && selectedEvent) {
         const outfit = getOutfitById(selectedEvent.outfitId)
         setOccasion(selectedEvent.occasion)
+        setTimesOfDay(selectedEvent.timesOfDay || [])
         if (outfit) {
             if (outfit.reasoning) { // AI-suggested outfit
                 setPlanType('suggest')
@@ -103,11 +109,38 @@ export default function CalendarPage() {
   }
 
   const handleOpenDialogForEdit = (event) => {
+    const eventDate = parse(event.date, 'yyyy-MM-dd', new Date())
+    const today = new Date()
+    
+    if (isBefore(eventDate, startOfDay(today))) {
+      toast({
+        variant: "destructive",
+        title: "Cannot Edit Past Event",
+        description: "You can only edit events that are today or in the future.",
+      })
+      return
+    }
+    
     setSelectedEvent(event)
     setDialogOpen(true)
   }
 
   const handleDeleteRequest = (eventId) => {
+    const event = plannedEvents.find(e => e.id === eventId)
+    if (event) {
+      const eventDate = parse(event.date, 'yyyy-MM-dd', new Date())
+      const today = new Date()
+      
+      if (isBefore(eventDate, startOfDay(today))) {
+        toast({
+          variant: "destructive",
+          title: "Cannot Delete Past Event",
+          description: "You can only delete events that are today or in the future.",
+        })
+        return
+      }
+    }
+    
     setEventToDeleteId(eventId)
   }
   
@@ -124,12 +157,21 @@ export default function CalendarPage() {
         toast({ variant: "destructive", title: "Please enter an occasion."})
         return
     }
+    
+    if (timesOfDay.length === 0) {
+        toast({ variant: "destructive", title: "Please select at least one time of day."})
+        return
+    }
+    
     startTransition(async () => {
       try {
-        const result = await getOutfitSuggestionsAction({ 
-            closetItems, 
-            occasion,
-            userPreferences: userProfile.stylePreferences,
+        const result = await aiAPI.getWeatherBasedSuggestions({ 
+            closetItems: closetItems,
+            occasion: occasion,
+            timesOfDay: timesOfDay,
+            userPreferences: user?.stylePreferences,
+            city: user?.city,
+            country: user?.country,
         })
         const newOutfitSuggestion = result.outfitSuggestions[0]
         if (!newOutfitSuggestion) {
@@ -179,6 +221,7 @@ export default function CalendarPage() {
       date: format(date, 'yyyy-MM-dd'),
       occasion: occasion_to_add,
       outfitId: outfitId_to_add,
+      timesOfDay: timesOfDay,
     }
     
     if (selectedEvent) {
@@ -217,20 +260,45 @@ export default function CalendarPage() {
                 const outfit = getOutfitById(event.outfitId)
                 if (!outfit) return null
                 
+                const eventDate = parse(event.date, 'yyyy-MM-dd', new Date())
+                const today = new Date()
+                const canModify = !isBefore(eventDate, startOfDay(today))
+                
                 return (
                   <Card key={event.id} className="rounded-xl shadow-sm border p-3">
                     <div className="flex justify-between items-start gap-2">
                        <div className="flex-1">
                          <p className="font-semibold text-sm">{outfit.name}</p>
                          <p className="text-xs text-muted-foreground">{event.occasion}</p>
+                         {event.timesOfDay && event.timesOfDay.length > 0 && (
+                           <div className="flex flex-wrap gap-1 mt-1">
+                             {event.timesOfDay.map(time => (
+                               <Badge key={time} variant="outline" className="text-xs">
+                                 {time}
+                               </Badge>
+                             ))}
+                           </div>
+                         )}
                          {outfit.reasoning && <Badge variant="outline" className="mt-2 text-xs">AI Suggested</Badge>}
                        </div>
                        <div className="flex items-center gap-0">
-                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenDialogForEdit(event)}>
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="h-8 w-8" 
+                           onClick={() => handleOpenDialogForEdit(event)}
+                           disabled={!canModify}
+                         >
                            <Edit className="h-4 w-4" />
                            <span className="sr-only">Edit</span>
                          </Button>
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteRequest(event.id)}>
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="h-8 w-8 text-destructive hover:text-destructive" 
+                           onClick={() => handleDeleteRequest(event.id)}
+                           disabled={!canModify}
+                         >
                            <Trash2 className="h-4 w-4" />
                            <span className="sr-only">Delete</span>
                          </Button>
@@ -300,6 +368,10 @@ export default function CalendarPage() {
                     value={occasion}
                     onChange={(e) => setOccasion(e.target.value)}
                     />
+                    <TimeOfDaySelector
+                      value={timesOfDay}
+                      onChange={setTimesOfDay}
+                    />
                     <Button onClick={handleGetSuggestion} disabled={isPending} className="w-full">
                     <Sparkles className="mr-2 h-4 w-4" />
                     {isPending ? 'Getting suggestion...' : 'Suggest Outfit'}
@@ -316,6 +388,10 @@ export default function CalendarPage() {
                         placeholder="Occasion (optional, e.g., Work meeting)"
                         value={occasion}
                         onChange={(e) => setOccasion(e.target.value)}
+                    />
+                    <TimeOfDaySelector
+                      value={timesOfDay}
+                      onChange={setTimesOfDay}
                     />
                     <Input
                         placeholder="Enter outfit name (e.g., Blue Jeans & White Tee)"

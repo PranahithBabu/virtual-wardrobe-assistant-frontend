@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns'
 import { useWardrobe } from '@/lib/contexts/WardrobeContext'
 import AppHeader from '@/components/app/AppHeader'
 import ItemCard from '@/components/ItemCard'
+import AddItemModal from '@/components/AddItemModal'
 import {
   Select,
   SelectContent,
@@ -47,6 +48,7 @@ export default function ClosetPage() {
   const { toast } = useToast()
   const [filters, setFilters] = useState(initialFilters)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [isAddModalOpen, setAddModalOpen] = useState(false)
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({ ...prev, [filterType]: value }))
@@ -105,6 +107,17 @@ export default function ClosetPage() {
       toast({ title: "Item Deleted", description: `${selectedItem.name} has been removed from your closet.`})
       setSelectedItem(null)
     }
+  }
+
+  const handlePhotoUpload = (file) => {
+    setAddModalOpen(false)
+    // Navigate to scan page and trigger photo upload
+    navigate('/scan', { state: { uploadedFile: file } })
+  }
+
+  const handleManualEntry = () => {
+    setAddModalOpen(false)
+    navigate('/scan')
   }
   
   const hasItems = closetItems.length > 0
@@ -170,8 +183,8 @@ export default function ClosetPage() {
             <div className="flex flex-col items-center justify-center h-full rounded-lg border-2 border-dashed border-muted-foreground/30 text-center">
                 <h2 className="text-2xl font-semibold tracking-tight font-headline">Your Closet is Empty</h2>
                 <p className="text-muted-foreground mt-2">Start by adding your first item.</p>
-                <Button asChild className="mt-4">
-                <Link to="/scan">Add Item</Link>
+                <Button className="mt-4" onClick={() => setAddModalOpen(true)}>
+                  Add Item
                 </Button>
             </div>
         )}
@@ -231,16 +244,22 @@ export default function ClosetPage() {
       </Dialog>
       
       {hasItems && (
-        <Link to="/scan">
-            <Button
-            className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
-            size="icon"
-            >
-            <Plus className="h-8 w-8" />
-            <span className="sr-only">Scan New Item</span>
-            </Button>
-        </Link>
+        <Button
+          className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+          size="icon"
+          onClick={() => setAddModalOpen(true)}
+        >
+          <Plus className="h-8 w-8" />
+          <span className="sr-only">Add New Item</span>
+        </Button>
       )}
+
+      <AddItemModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onPhotoUpload={handlePhotoUpload}
+        onManualEntry={handleManualEntry}
+      />
     </div>
   )
 }

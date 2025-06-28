@@ -2,8 +2,10 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/app/AppSidebar'
+import { AuthProvider } from '@/lib/contexts/AuthContext'
 import { WardrobeProvider } from '@/lib/contexts/WardrobeContext'
 import { Toaster } from '@/components/ui/toaster'
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
 // Pages
 import OnboardingPage from '@/pages/OnboardingPage'
@@ -28,18 +30,38 @@ function AppLayout({ children }) {
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Routes>
         <Route path="/" element={<OnboardingPage />} />
-        <Route path="/closet" element={<AppLayout><ClosetPage /></AppLayout>} />
-        <Route path="/suggestions" element={<AppLayout><SuggestionsPage /></AppLayout>} />
-        <Route path="/calendar" element={<AppLayout><CalendarPage /></AppLayout>} />
-        <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
-        <Route path="/scan" element={<AppLayout><ScanPage /></AppLayout>} />
-        <Route path="*" element={<Navigate to="/closet" replace />} />
+        <Route path="/closet" element={
+          <ProtectedRoute>
+            <AppLayout><ClosetPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/suggestions" element={
+          <ProtectedRoute>
+            <AppLayout><SuggestionsPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/calendar" element={
+          <ProtectedRoute>
+            <AppLayout><CalendarPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <AppLayout><ProfilePage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/scan" element={
+          <ProtectedRoute>
+            <AppLayout><ScanPage /></AppLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster />
-    </>
+    </AuthProvider>
   )
 }
 
