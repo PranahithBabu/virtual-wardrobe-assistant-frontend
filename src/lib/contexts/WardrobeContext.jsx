@@ -1,39 +1,95 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react'
-import { mockClosetItems } from '../mock-data'
-
-const initialUserProfile = {
-    name: 'Alex Doe',
-    email: 'alex.doe@example.com',
-    avatarUrl: 'https://placehold.co/100x100.png',
-    stylePreferences: 'I love a minimalist style with neutral colors. I occasionally like to add a pop of color with accessories. My go-to look is casual chic.',
-}
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
+import { closetAPI, userAPI } from '@/lib/api'
+import { useAuth } from './AuthContext'
 
 const WardrobeContext = createContext(undefined)
 
 export function WardrobeProvider({ children }) {
-  const [closetItems, setClosetItems] = useState(mockClosetItems)
+  const { user, isAuthenticated } = useAuth()
+  const [closetItems, setClosetItems] = useState([])
   const [outfits, setOutfits] = useState([])
   const [plannedEvents, setPlannedEvents] = useState([])
-  const [userProfile, setUserProfile] = useState(initialUserProfile)
+  const [userProfile, setUserProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const addItem = useCallback((item) => {
-    setClosetItems((prevItems) => [
-      ...prevItems,
-      { ...item, id: Date.now() },
-    ])
+  // Load data when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadUserData()
+    } else {
+      // Reset data when user logs out
+      setClosetItems([])
+      setOutfits([])
+      setPlannedEvents([])
+      setUserProfile(null)
+      setLoading(false)
+    }
+  }, [isAuthenticated, user])
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true)
+      
+      // Load user profile from authenticated user data
+      setUserProfile({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        stylePreferences: user.stylePreferences,
+      })
+
+      // Load closet items from API
+      const items = await closetAPI.getAll()
+      setClosetItems(items || [])
+      
+    } catch (error) {
+      console.error('Error loading user data:', error)
+      // Set user profile from auth context even if API fails
+      setUserProfile({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        stylePreferences: user.stylePreferences,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addItem = useCallback(async (item) => {
+    try {
+      const newItem = await closetAPI.create(item)
+      setClosetItems((prevItems) => [...prevItems, newItem])
+      return newItem
+    } catch (error) {
+      console.error('Error adding item:', error)
+      throw error
+    }
   }, [])
   
-  const updateItem = useCallback((id, itemData) => {
-    setClosetItems((prevItems) => prevItems.map(item => {
-      if (item.id === id) {
-        return { ...item, ...itemData, imageUrl: itemData.imageUrl || item.imageUrl }
-      }
-      return item
-    }))
+  const updateItem = useCallback(async (id, itemData) => {
+    try {
+      const updatedItem = await closetAPI.update(id, itemData)
+      setClosetItems((prevItems) => prevItems.map(item => 
+        item.id === id ? updatedItem : item
+      ))
+      return updatedItem
+    } catch (error) {
+      console.error('Error updating item:', error)
+      throw error
+    }
   }, [])
 
-  const deleteItem = useCallback((id) => {
-    setClosetItems((prevItems) => prevItems.filter(item => item.id !== id))
+  const deleteItem = useCallback(async (id) => {
+    try {
+      await closetAPI.delete(id)
+      setClosetItems((prevItems) => prevItems.filter(item => item.id !== id))
+    } catch (error) {
+      console.error('Error deleting item:', error)
+      throw error
+    }
   }, [])
 
   const addOutfit = useCallback((outfit) => {
@@ -131,9 +187,18 @@ export function WardrobeProvider({ children }) {
     setPlannedEvents(prevEvents => prevEvents.filter(event => event.id !== id))
   }, [plannedEvents])
 
-  const updateUserProfile = useCallback((profileData) => {
-    setUserProfile(prevProfile => ({ ...prevProfile, ...profileData }))
-  }, [])
+  const updateUserProfile = useCallback(async (profileData) => {
+    try {
+      if (userProfile?.id) {
+        await userAPI.updateProfile(userProfile.id, profileData)
+      }
+      setUserProfile(prevProfile => ({ ...prevProfile, ...profileData }))
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      // Still update local state even if API fails
+      setUserProfile(prevProfile => ({ ...prevProfile, ...profileData }))
+    }
+  }, [userProfile])
 
   const getItemById = useCallback((id) => closetItems.find(item => item.id === id), [closetItems])
   const getOutfitById = useCallback((id) => outfits.find(outfit => outfit.id === id), [outfits])
@@ -143,6 +208,7 @@ export function WardrobeProvider({ children }) {
     outfits,
     plannedEvents,
     userProfile,
+    loading,
     addItem,
     updateItem,
     deleteItem,
@@ -153,11 +219,13 @@ export function WardrobeProvider({ children }) {
     getItemById,
     getOutfitById,
     updateUserProfile,
+    refreshData: loadUserData,
   }), [
     closetItems,
     outfits,
     plannedEvents,
     userProfile,
+    loading,
     addItem,
     updateItem,
     deleteItem,

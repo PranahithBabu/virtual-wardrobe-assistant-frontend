@@ -39,11 +39,13 @@ export default function SignInForm({ onSuccess }) {
       })
       onSuccess?.()
     } catch (error) {
+      console.error('Sign in error:', error)
       toast({
         variant: "destructive",
         title: "Sign in failed",
         description: error.message || "Please check your credentials and try again.",
       })
+      // Don't navigate away on error, let user try again
     } finally {
       setIsLoading(false)
     }
