@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -50,6 +50,7 @@ const formSchema = z.object({
 
 export default function ScanPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { addItem, getItemById, updateItem } = useWardrobe()
   const { toast } = useToast()
@@ -57,6 +58,7 @@ export default function ScanPage() {
   const [isLastWornPickerOpen, setLastWornPickerOpen] = useState(false)
   const [isAIProcessing, setIsAIProcessing] = useState(false)
   const [aiSuggestion, setAiSuggestion] = useState(null)
+  const [uploadedFile, setUploadedFile] = useState(null)
   
   const itemId = searchParams.get('edit')
   const isEditMode = !!itemId
@@ -72,6 +74,22 @@ export default function ScanPage() {
       lastWorn: undefined,
     },
   })
+
+  // Handle uploaded file from AddItemModal
+  useEffect(() => {
+    if (location.state?.uploadedFile) {
+      const file = location.state.uploadedFile
+      setUploadedFile(file)
+      setPreview(URL.createObjectURL(file))
+      form.setValue('image', [file])
+      
+      // Trigger AI analysis for uploaded images
+      handleImageAnalysis(file)
+      
+      // Clear the state to prevent re-processing
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
 
   useEffect(() => {
     if (isEditMode && itemToEdit) {
@@ -108,16 +126,29 @@ export default function ScanPage() {
       setAiSuggestion(analysis)
       
       // Auto-fill form with AI suggestions
-      form.setValue('name', analysis.name)
-      form.setValue('category', analysis.category)
-      form.setValue('color', analysis.color)
-      form.setValue('seasons', analysis.seasons)
+      if (analysis.name && analysis.name !== 'Unknown') {
+        form.setValue('name', analysis.name)
+      }
+      if (analysis.category && categories.includes(analysis.category)) {
+        form.setValue('category', analysis.category)
+      }
+      if (analysis.color && analysis.color !== 'Unknown') {
+        form.setValue('color', analysis.color)
+      }
+      if (analysis.seasons && analysis.seasons.length > 0) {
+        // Filter valid seasons
+        const validSeasons = analysis.seasons.filter(season => seasons.includes(season))
+        if (validSeasons.length > 0) {
+          form.setValue('seasons', validSeasons)
+        }
+      }
       
       toast({
         title: "AI Analysis Complete!",
         description: "We've auto-filled the form with detected information. Feel free to edit as needed.",
       })
     } catch (error) {
+      console.error('AI Analysis Error:', error)
       toast({
         variant: "destructive",
         title: "AI Analysis Failed",
@@ -138,14 +169,18 @@ export default function ScanPage() {
       setAiSuggestion(analysis)
       
       // Auto-fill form with AI suggestions (except name which user already entered)
-      if (analysis.category && analysis.category !== 'Unknown') {
+      if (analysis.category && analysis.category !== 'Unknown' && categories.includes(analysis.category)) {
         form.setValue('category', analysis.category)
       }
       if (analysis.color && analysis.color !== 'Unknown') {
         form.setValue('color', analysis.color)
       }
       if (analysis.seasons && analysis.seasons.length > 0) {
-        form.setValue('seasons', analysis.seasons)
+        // Filter valid seasons
+        const validSeasons = analysis.seasons.filter(season => seasons.includes(season))
+        if (validSeasons.length > 0) {
+          form.setValue('seasons', validSeasons)
+        }
       }
       
       // Generate image for manual entry
@@ -160,6 +195,7 @@ export default function ScanPage() {
         description: "We've suggested categories and generated an image. Feel free to adjust as needed.",
       })
     } catch (error) {
+      console.error('Text Analysis Error:', error)
       toast({
         variant: "destructive",
         title: "AI Analysis Failed",
@@ -170,42 +206,51 @@ export default function ScanPage() {
     }
   }
 
-  const onSubmit = (data) => {
-    const lastWornDate = data.lastWorn ? format(data.lastWorn, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
-    
-    if (isEditMode && itemToEdit) {
-        const { image, ...updateData } = data
-        const newImageData = image instanceof FileList ? URL.createObjectURL(image[0]) : undefined
+  const onSubmit = async (data) => {
+    try {
+      const lastWornDate = data.lastWorn ? format(data.lastWorn, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+      
+      if (isEditMode && itemToEdit) {
+          const { image, ...updateData } = data
+          const newImageData = image instanceof FileList ? URL.createObjectURL(image[0]) : undefined
 
-        updateItem(itemToEdit.id, {
-            ...updateData,
-            season: data.seasons,
-            lastWorn: lastWornDate,
-            ...(newImageData && { imageUrl: newImageData })
-        })
+          await updateItem(itemToEdit.id, {
+              ...updateData,
+              season: data.seasons,
+              lastWorn: lastWornDate,
+              ...(newImageData && { imageUrl: newImageData })
+          })
 
-        toast({
-            title: "Item Updated!",
-            description: `${data.name} has been updated.`,
-        })
-    } else {
-        const imageUrl = typeof data.image === 'string' ? data.image : URL.createObjectURL(data.image[0])
-        
-        addItem({
-            name: data.name,
-            category: data.category,
-            color: data.color,
-            season: data.seasons,
-            imageUrl: imageUrl,
-            lastWorn: lastWornDate,
-            dataAiHint: aiSuggestion?.dataAiHint || `${data.color.toLowerCase()} ${data.name.toLowerCase()}`,
-        })
-        toast({
-            title: "Item Added!",
-            description: `${data.name} has been added to your closet.`,
-        })
+          toast({
+              title: "Item Updated!",
+              description: `${data.name} has been updated.`,
+          })
+      } else {
+          const imageUrl = typeof data.image === 'string' ? data.image : URL.createObjectURL(data.image[0])
+          
+          await addItem({
+              name: data.name,
+              category: data.category,
+              color: data.color,
+              season: data.seasons,
+              imageUrl: imageUrl,
+              lastWorn: lastWornDate,
+              dataAiHint: aiSuggestion?.dataAiHint || `${data.color.toLowerCase()} ${data.name.toLowerCase()}`,
+          })
+          toast({
+              title: "Item Added!",
+              description: `${data.name} has been added to your closet.`,
+          })
+      }
+      navigate('/closet')
+    } catch (error) {
+      console.error('Error saving item:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save item. Please try again.",
+      })
     }
-    navigate('/closet')
   }
 
   const handleImageChange = async (e) => {
@@ -213,6 +258,7 @@ export default function ScanPage() {
     if (file) {
       setPreview(URL.createObjectURL(file))
       form.setValue('image', e.target.files)
+      setUploadedFile(file)
       
       // Trigger AI analysis for uploaded images
       if (!isEditMode) {
@@ -225,19 +271,20 @@ export default function ScanPage() {
     setPreview(null)
     form.setValue('image', undefined, { shouldValidate: true })
     setAiSuggestion(null)
+    setUploadedFile(null)
   }
 
-  // Watch name field for text analysis
+  // Watch name field for text analysis (only for manual entry without image)
   const watchedName = form.watch('name')
   useEffect(() => {
-    if (!isEditMode && watchedName && watchedName.length >= 3 && !preview) {
+    if (!isEditMode && watchedName && watchedName.length >= 3 && !preview && !uploadedFile) {
       const timeoutId = setTimeout(() => {
         handleTextAnalysis(watchedName)
       }, 1000) // Debounce for 1 second
       
       return () => clearTimeout(timeoutId)
     }
-  }, [watchedName, isEditMode, preview])
+  }, [watchedName, isEditMode, preview, uploadedFile])
 
   return (
     <div className="flex flex-col h-full">
@@ -309,7 +356,7 @@ export default function ScanPage() {
                         <FormControl>
                           <Input placeholder="e.g., White Cotton T-Shirt" {...field} />
                         </FormControl>
-                        {!isEditMode && !preview && (
+                        {!isEditMode && !preview && !uploadedFile && (
                           <FormDescription>
                             ✨ AI will suggest details as you type
                           </FormDescription>

@@ -98,8 +98,8 @@ export default function CalendarPage() {
     }
   }, [isDialogOpen, selectedEvent, getOutfitById])
 
-  const handleDayClick = (day, modifiers) => {
-    if (modifiers.disabled) return
+  const handleDayClick = (day) => {
+    if (!day) return
     setDate(day)
   }
 

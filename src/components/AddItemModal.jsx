@@ -41,11 +41,11 @@ export default function AddItemModal({ isOpen, onClose, onPhotoUpload, onManualE
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md rounded-2xl">
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-center font-headline">Add New Item</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-6">
           {/* Photo Upload Option */}
           <Card 
             className={`border-2 border-dashed transition-colors cursor-pointer ${
